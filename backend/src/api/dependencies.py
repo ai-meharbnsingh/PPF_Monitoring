@@ -22,11 +22,11 @@ from src.utils.constants import UserRole
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # auto_error=False: we raise 401 manually (not 403)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """
@@ -36,6 +36,12 @@ async def get_current_user(
         401 UNAUTHORIZED: If token is invalid, expired, or user doesn't exist
         401 ACCOUNT_DISABLED: If user account is deactivated
     """
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "NOT_AUTHENTICATED", "message": "Authentication required"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     token = credentials.credentials
 
     try:

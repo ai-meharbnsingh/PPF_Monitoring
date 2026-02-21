@@ -1,41 +1,42 @@
 # PPF Workshop Monitoring System — Backend Dependencies
-# Python 3.11+
+# Python 3.11+ (tested on Python 3.13)
 # Install: pip install -r requirements.txt
 
 # =============================================================
 # CORE FRAMEWORK
 # =============================================================
-fastapi==0.109.2
-uvicorn[standard]==0.27.1
-python-multipart==0.0.9       # Form data support
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20      # Form data support
 
 # =============================================================
 # DATABASE
 # =============================================================
-sqlalchemy==2.0.25
-asyncpg==0.29.0               # Async PostgreSQL driver
-alembic==1.13.1               # Database migrations
-psycopg2-binary==2.9.9        # Sync PostgreSQL driver (for Alembic)
+sqlalchemy==2.0.36
+asyncpg==0.30.0               # Async PostgreSQL driver
+alembic==1.14.0               # Database migrations
+psycopg2-binary==2.9.10       # Sync PostgreSQL driver (for Alembic)
 
 # =============================================================
 # AUTHENTICATION & SECURITY
 # =============================================================
 python-jose[cryptography]==3.3.0   # JWT tokens
 passlib[bcrypt]==1.7.4             # Password hashing (bcrypt)
-cryptography==42.0.2
+bcrypt==4.0.1                      # Pin — passlib 1.7.4 incompatible with bcrypt>=5.0
+cryptography==44.0.0
 
 # =============================================================
 # CONFIGURATION
 # =============================================================
 python-dotenv==1.0.1          # .env file loading
-pyyaml==6.0.1                 # YAML config file parsing
-pydantic==2.6.1               # Data validation (included with FastAPI)
-pydantic-settings==2.2.0      # Settings management
+pyyaml==6.0.2                 # YAML config file parsing
+pydantic[email]==2.10.4       # Data validation — Python 3.13 compatible (email extra for EmailStr)
+pydantic-settings==2.7.0      # Settings management
 
 # =============================================================
 # MQTT
 # =============================================================
-paho-mqtt==1.6.1              # MQTT client for Python
+paho-mqtt==1.6.1              # MQTT client for Python (v1 API — keep at 1.x, v2 breaks callbacks)
 
 # =============================================================
 # REAL-TIME (WebSocket)
@@ -45,7 +46,7 @@ paho-mqtt==1.6.1              # MQTT client for Python
 # =============================================================
 # NOTIFICATIONS
 # =============================================================
-twilio==8.12.0                # SMS alerts (optional — enable in settings)
+twilio==9.4.3                 # SMS alerts (optional — enable in settings)
 # aiosmtplib==3.0.1           # Async email (uncomment when needed)
 
 # =============================================================
@@ -53,21 +54,21 @@ twilio==8.12.0                # SMS alerts (optional — enable in settings)
 # =============================================================
 python-slugify==8.0.4         # Generate workshop slugs from names
 shortuuid==1.0.13             # Generate short unique IDs for tokens
-httpx==0.26.0                 # Async HTTP client (for MediaMTX API)
+httpx==0.28.1                 # Async HTTP client (for MediaMTX API)
 
 # =============================================================
 # LOGGING
 # =============================================================
-loguru==0.7.2                 # Enhanced logging
+loguru==0.7.3                 # Enhanced logging
 
 # =============================================================
 # TESTING
 # =============================================================
-pytest==8.0.1
-pytest-asyncio==0.23.4
-httpx==0.26.0                 # For FastAPI TestClient
-pytest-cov==4.1.0
-factory-boy==3.3.0            # Test data factories
+pytest==8.3.4
+pytest-asyncio==0.25.2
+httpx==0.28.1                 # For FastAPI TestClient
+pytest-cov==6.0.0
+factory-boy==3.3.1            # Test data factories
 
 # =============================================================
 # CODE QUALITY (development only)
