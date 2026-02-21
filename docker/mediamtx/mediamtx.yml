@@ -1,0 +1,96 @@
+###############################################################################
+# mediamtx.yml
+# MediaMTX Configuration — PPF Workshop Monitoring System
+#
+# Handles RTSP streams from Hikvision IP cameras.
+# Exposes streams as:
+#   RTSP:   rtsp://<server>:8554/<path>
+#   HLS:    http://<server>:8888/<path>
+#   WebRTC: http://<server>:8889/<path>
+#
+# Stream path naming convention (must match backend streams.py):
+#   workshop_{workshop_id}_pit_{pit_number}
+#   Example: workshop_1_pit_1
+#
+# Author: PPF Monitoring Team
+# Created: 2026-02-22
+###############################################################################
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+logLevel: info
+logDestinations: [stdout]
+
+# ─── API (used by backend to list/manage paths) ───────────────────────────────
+api: yes
+apiAddress: :9997
+# Optionally enable API authentication in production:
+# apiEncryption: no
+# apiUsername:
+# apiPassword:
+
+# ─── RTSP server ──────────────────────────────────────────────────────────────
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp]           # tcp is more reliable behind NAT
+
+# Disable RTSPS (TLS) in dev — enable in production with proper certs
+rtsps: no
+
+# ─── HLS server ───────────────────────────────────────────────────────────────
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes        # Keep HLS ready even when no viewer is watching
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+
+# ─── WebRTC server ────────────────────────────────────────────────────────────
+webrtc: yes
+webrtcAddress: :8889
+
+# ─── SRT server (disabled — not needed) ──────────────────────────────────────
+srt: no
+
+# ─── RTMP server (disabled — not needed) ─────────────────────────────────────
+rtmp: no
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Path definitions
+#
+# Each PPF pit maps to one stream path.
+# The Hikvision camera RTSP URL is pulled in from the source.
+# Adjust camera URLs as needed.
+#
+# Hikvision RTSP URL format:
+#   rtsp://<user>:<password>@<camera_ip>:<port>/Streaming/Channels/<channel>
+#   Main stream: channel 101
+#   Sub stream:  channel 102 (lower resolution, better for WebRTC)
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Default path — allows any new path to be created on-the-fly ───────────
+  # This allows the backend to push streams dynamically without pre-configuring
+  # every pit here.
+  ~^.*$:
+    source: publisher
+
+  # ── Static example: Workshop 1, Pit 1 ─────────────────────────────────────
+  # Uncomment and configure when camera is connected.
+  # Replace camera IP and credentials.
+  #
+  # workshop_1_pit_1:
+  #   source: rtsp://admin:password@192.168.1.64:554/Streaming/Channels/102
+  #   sourceOnDemand: yes          # Only pull when a viewer requests it (saves bandwidth)
+  #   sourceOnDemandStartTimeout: 10s
+  #   sourceOnDemandCloseAfter: 60s
+  #
+  # workshop_1_pit_2:
+  #   source: rtsp://admin:password@192.168.1.65:554/Streaming/Channels/102
+  #   sourceOnDemand: yes
+  #   sourceOnDemandStartTimeout: 10s
+  #   sourceOnDemandCloseAfter: 60s
+
+  # ── Health check path ─────────────────────────────────────────────────────
+  # Can be used by monitoring to verify MediaMTX is alive
+  health:
+    source: publisher

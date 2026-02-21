@@ -1,0 +1,78 @@
+# PPF Workshop Monitoring System — Backend Dependencies
+# Python 3.11+
+# Install: pip install -r requirements.txt
+
+# =============================================================
+# CORE FRAMEWORK
+# =============================================================
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9       # Form data support
+
+# =============================================================
+# DATABASE
+# =============================================================
+sqlalchemy==2.0.25
+asyncpg==0.29.0               # Async PostgreSQL driver
+alembic==1.13.1               # Database migrations
+psycopg2-binary==2.9.9        # Sync PostgreSQL driver (for Alembic)
+
+# =============================================================
+# AUTHENTICATION & SECURITY
+# =============================================================
+python-jose[cryptography]==3.3.0   # JWT tokens
+passlib[bcrypt]==1.7.4             # Password hashing (bcrypt)
+cryptography==42.0.2
+
+# =============================================================
+# CONFIGURATION
+# =============================================================
+python-dotenv==1.0.1          # .env file loading
+pyyaml==6.0.1                 # YAML config file parsing
+pydantic==2.6.1               # Data validation (included with FastAPI)
+pydantic-settings==2.2.0      # Settings management
+
+# =============================================================
+# MQTT
+# =============================================================
+paho-mqtt==1.6.1              # MQTT client for Python
+
+# =============================================================
+# REAL-TIME (WebSocket)
+# =============================================================
+# WebSocket support built into FastAPI/Starlette
+
+# =============================================================
+# NOTIFICATIONS
+# =============================================================
+twilio==8.12.0                # SMS alerts (optional — enable in settings)
+# aiosmtplib==3.0.1           # Async email (uncomment when needed)
+
+# =============================================================
+# UTILITIES
+# =============================================================
+python-slugify==8.0.4         # Generate workshop slugs from names
+shortuuid==1.0.13             # Generate short unique IDs for tokens
+httpx==0.26.0                 # Async HTTP client (for MediaMTX API)
+
+# =============================================================
+# LOGGING
+# =============================================================
+loguru==0.7.2                 # Enhanced logging
+
+# =============================================================
+# TESTING
+# =============================================================
+pytest==8.0.1
+pytest-asyncio==0.23.4
+httpx==0.26.0                 # For FastAPI TestClient
+pytest-cov==4.1.0
+factory-boy==3.3.0            # Test data factories
+
+# =============================================================
+# CODE QUALITY (development only)
+# =============================================================
+# black==24.2.0
+# isort==5.13.2
+# flake8==7.0.0
+# mypy==1.8.0

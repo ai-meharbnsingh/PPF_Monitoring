@@ -1,0 +1,120 @@
+# PPF Workshop Monitoring System — Main Configuration
+# Version: 1.0.0
+# Environment: development (override via .env ENVIRONMENT variable)
+# DO NOT hardcode secrets here — use .env for all sensitive values
+
+app:
+  name: "PPF Workshop Monitoring System"
+  version: "1.0.0"
+  environment: "development"           # development | staging | production
+  debug: true
+  api_prefix: "/api/v1"
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1                           # increase to 4 in production
+  reload: true                         # set false in production
+  cors_origins:
+    - "http://localhost:3000"          # React dev server
+    - "http://localhost:5173"          # Vite dev server
+    # Add production domain before deploying
+
+database:
+  type: "postgresql"
+  host: "localhost"
+  port: 5432
+  name: "ppf_monitoring"
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout: 30
+  pool_recycle: 3600
+  echo_sql: false                      # set true for SQL debugging
+
+mqtt:
+  broker_host: "localhost"
+  broker_port: 1883
+  keepalive: 60
+  reconnect_delay_seconds: 5
+  max_reconnect_attempts: 10
+  qos: 1                               # 0=at most once, 1=at least once, 2=exactly once
+  topics:
+    sensor_data: "workshop/+/pit/+/sensors"
+    device_command: "workshop/{workshop_id}/device/{device_id}/command"
+    device_status: "workshop/+/device/+/status"
+
+auth:
+  algorithm: "HS256"
+  access_token_expire_hours: 24
+  owner_token_expire_hours: 168        # 7 days for owners
+  customer_token_expire_hours: 24
+  max_login_attempts: 5
+  lockout_minutes: 15
+  password_min_length: 8
+
+sensor:
+  default_report_interval_seconds: 10
+  offline_threshold_seconds: 60       # mark device offline after N seconds
+  camera_offline_threshold_seconds: 30
+  data_retention_days: 90             # hot storage before archiving
+
+alerts:
+  # WHO 2021 Standards (can be overridden per workshop via alert_configs table)
+  defaults:
+    temperature_min_c: 15.0
+    temperature_max_c: 35.0
+    humidity_max_percent: 70.0
+    pm25_warning_ugm3: 12.0
+    pm25_critical_ugm3: 35.4
+    pm10_warning_ugm3: 54.0
+    pm10_critical_ugm3: 154.0
+    iaq_warning: 100.0
+    iaq_critical: 150.0
+
+video:
+  mediamtx_host: "localhost"
+  mediamtx_rtsp_port: 8554
+  mediamtx_webrtc_port: 8889
+  mediamtx_hls_port: 8888
+  stream_token_expire_hours: 1
+
+subscriptions:
+  trial_days: 14
+  grace_period_days: 7               # days after expiry before suspension
+
+logging:
+  level: "INFO"                       # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/ppf_backend.log"
+  max_file_size_mb: 10
+  backup_count: 5
+  log_sql: false
+
+features:
+  sms_notifications:
+    enabled: false                    # enable after Twilio setup
+    description: "SMS alerts via Twilio"
+  email_notifications:
+    enabled: false
+    description: "Email alerts via SMTP"
+  video_recording:
+    enabled: false                    # Phase 2 feature
+    description: "Record and store job video"
+  time_lapse:
+    enabled: false                    # Phase 2 feature
+    description: "Generate time-lapse of job"
+  analytics:
+    enabled: true
+    description: "Sensor and job analytics charts"
+  webhook_alerts:
+    enabled: false
+    description: "POST alerts to external webhook"
+
+security:
+  bcrypt_rounds: 12
+  rate_limit_per_minute: 100
+  rate_limit_login_per_minute: 10
+  https_only: false                   # set true in production
+  trusted_hosts:
+    - "localhost"
+    - "127.0.0.1"

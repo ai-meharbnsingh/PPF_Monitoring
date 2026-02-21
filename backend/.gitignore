@@ -1,0 +1,62 @@
+# PPF Workshop Monitoring System — .gitignore
+
+# ── Environment & Secrets ──────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+credentials*
+*_PRIVATE.md
+
+# ── Python ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.ENV/
+
+# ── Testing & Coverage ─────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.coveragerc
+
+# ── Logs ───────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Data ───────────────────────────────────────────────────
+data/
+database/backups/
+
+# ── Database ───────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── IDE & OS ───────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Keys & Certificates ────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# ── Build Artifacts ────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Alembic (auto-generated, version-control the templates only) ──
+# (keep migrations/ — those are intentionally committed)

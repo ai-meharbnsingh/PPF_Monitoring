@@ -1,0 +1,173 @@
+###############################################################################
+# PPF Workshop Monitoring System — Docker Compose Stack
+#
+# Services:
+#   postgres    — PostgreSQL 15 database
+#   mosquitto   — MQTT broker (Mosquitto 2)
+#   mediamtx    — RTSP / WebRTC / HLS proxy for Hikvision camera
+#   backend     — FastAPI application (Python 3.11)
+#   pgadmin     — Optional DB admin UI (disabled in production)
+#
+# Usage:
+#   cp .env.example .env          # Fill in secrets
+#   docker compose up -d
+#   docker compose logs -f backend
+#
+# First-run database setup (after containers are up):
+#   docker compose exec backend python scripts/setup/setup_db.py
+#
+# Author: PPF Monitoring Team
+# Created: 2026-02-22
+###############################################################################
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PostgreSQL 15
+  # ─────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: ppf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${DATABASE_USER:-ppf_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB:       ${DATABASE_NAME:-ppf_monitoring}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"           # Expose for local tools (psql, pgAdmin)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-ppf_user} -d ${DATABASE_NAME:-ppf_monitoring}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ppf_net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Mosquitto MQTT Broker
+  # ─────────────────────────────────────────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: ppf_mosquitto
+    restart: unless-stopped
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./docker/mosquitto/passwd:/mosquitto/config/passwd:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    ports:
+      - "1883:1883"            # MQTT (plain)
+      - "8883:8883"            # MQTT over TLS (reserved)
+      - "9001:9001"            # MQTT over WebSocket
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -u health -P health -t health -m ping 2>/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - ppf_net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # MediaMTX — RTSP / WebRTC / HLS proxy for Hikvision IP camera
+  # ─────────────────────────────────────────────────────────────────────────
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: ppf_mediamtx
+    restart: unless-stopped
+    environment:
+      MTX_LOGLEVEL: info
+    volumes:
+      - ./docker/mediamtx/mediamtx.yml:/mediamtx.yml:ro
+    ports:
+      - "8554:8554"            # RTSP
+      - "8888:8888"            # HLS
+      - "8889:8889"            # WebRTC
+      - "9997:9997"            # API (used by backend for stream management)
+    networks:
+      - ppf_net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # FastAPI Backend
+  # ─────────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ppf_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override host names to use Docker service names
+      DATABASE_HOST: postgres
+      MQTT_BROKER_HOST: mosquitto
+      MEDIAMTX_HOST: mediamtx
+    volumes:
+      - ./backend:/app               # Hot-reload in development
+      - backend_logs:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    command: >
+      uvicorn src.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir src
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ppf_net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # pgAdmin (development helper — comment out in production)
+  # ─────────────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ppf_pgadmin
+    restart: unless-stopped
+    profiles:
+      - dev                          # Only starts with: docker compose --profile dev up
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@ppf.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-pgadmin}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - ppf_net
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  mosquitto_data:
+    driver: local
+  mosquitto_logs:
+    driver: local
+  backend_logs:
+    driver: local
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Networks
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  ppf_net:
+    driver: bridge
+    name: ppf_network

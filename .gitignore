@@ -1,0 +1,67 @@
+# PPF Workshop Monitoring System — Root .gitignore
+
+# ── Secrets & Environment ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+credentials*
+*_PRIVATE.md
+*_private.md
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.coveragerc
+
+# ── Node / Frontend ──────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+*.tsbuildinfo
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Data & Databases ─────────────────────────────────────────
+backend/data/
+backend/database/backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Keys & Certificates ──────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# ── IDE & OS ─────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Claude internal ──────────────────────────────────────────
+.claude/
+
+# ── Docker volumes ───────────────────────────────────────────
+docker/data/
+docker/logs/
