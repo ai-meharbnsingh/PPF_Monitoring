@@ -43,6 +43,10 @@
   #include "sensors/pms5003.h"
 #endif
 
+#ifdef SENSOR_CONFIG_DHT22
+  #include "sensors/dht22.h"
+#endif
+
 #ifdef SENSOR_CONFIG_BME680
   #include "sensors/bme680.h"
 #endif
@@ -58,6 +62,10 @@ NTPSync     ntp;
 #ifdef SENSOR_CONFIG_DHT22_PMS5003
   DHT22Sensor  dhtSensor(PIN_DHT22);
   PMS5003Sensor pmsSensor(PIN_PMS5003_RX, PIN_PMS5003_TX);
+#endif
+
+#ifdef SENSOR_CONFIG_DHT22
+  DHT22Sensor dhtSensor(PIN_DHT22);
 #endif
 
 #ifdef SENSOR_CONFIG_BME680
@@ -101,6 +109,9 @@ static void printBanner() {
 #ifdef SENSOR_CONFIG_DHT22_PMS5003
     DEBUG_PRINTLN("║  Sensors:   DHT22 + PMS5003                  ║");
 #endif
+#ifdef SENSOR_CONFIG_DHT22
+    DEBUG_PRINTLN("║  Sensors:   DHT22 only (testing)             ║");
+#endif
 #ifdef SENSOR_CONFIG_BME680
     DEBUG_PRINTLN("║  Sensors:   BME680                           ║");
 #endif
@@ -133,6 +144,10 @@ void setup() {
 #ifdef SENSOR_CONFIG_DHT22_PMS5003
     dhtSensor.begin();
     pmsSensor.begin();   // includes 30 s warmup — watchdog is already fed
+#endif
+
+#ifdef SENSOR_CONFIG_DHT22
+    dhtSensor.begin();   // no PMS5003 warmup — boots in ~2 s
 #endif
 
 #ifdef SENSOR_CONFIG_BME680
@@ -229,6 +244,26 @@ void loop() {
         }
 
 #endif  // SENSOR_CONFIG_DHT22_PMS5003
+
+#ifdef SENSOR_CONFIG_DHT22
+
+        DHT22Reading dhtData = dhtSensor.read();
+
+        if (!dhtData.valid) {
+            DEBUG_PRINTLN("[MAIN] DHT22 read failed");
+            blinkLed(2, 80);
+        } else {
+            if (PayloadBuilder::buildDHT22Only(dhtData, _tsBuf,
+                                               _sensorBuf, sizeof(_sensorBuf))) {
+                if (mqtt.publishSensorData(_sensorBuf)) {
+                    digitalWrite(PIN_STATUS_LED, HIGH);
+                    delay(50);
+                    digitalWrite(PIN_STATUS_LED, LOW);
+                }
+            }
+        }
+
+#endif  // SENSOR_CONFIG_DHT22
 
 #ifdef SENSOR_CONFIG_BME680
 

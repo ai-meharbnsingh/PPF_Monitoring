@@ -9,6 +9,7 @@ import {
 } from '@/store/slices/authSlice'
 import { authApi } from '@/api/auth'
 import { wsService } from '@/services/websocket'
+import { LS_TOKEN_KEY } from '@/utils/constants'
 import type { LoginRequest } from '@/types/auth'
 
 export function useAuth() {
@@ -23,6 +24,8 @@ export function useAuth() {
       dispatch(setError(null))
       try {
         const result = await authApi.login(data)
+        // Store token first so the API client can use it for getMe()
+        localStorage.setItem(LS_TOKEN_KEY, result.access_token)
         // Fetch full profile after login
         const profile = await authApi.getMe()
         dispatch(setCredentials({ token: result.access_token, user: profile }))

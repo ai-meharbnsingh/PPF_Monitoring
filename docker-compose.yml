@@ -63,7 +63,7 @@ services:
       - "8883:8883"            # MQTT over TLS (reserved)
       - "9001:9001"            # MQTT over WebSocket
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -u health -P health -t health -m ping 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -u health -P health123 -t health -m ping 2>/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

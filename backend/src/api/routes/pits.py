@@ -26,6 +26,7 @@ from src.schemas.pit import PitCreate, PitResponse, PitSummary, PitUpdate
 from src.utils.logger import get_logger
 
 router = APIRouter(prefix="/workshops/{workshop_id}/pits", tags=["pits"])
+root_router = APIRouter(prefix="/pits", tags=["pits"])
 logger = get_logger(__name__)
 
 
@@ -226,3 +227,26 @@ async def delete_pit(
     await db.commit()
     logger.info(f"Pit deleted: id={pit_id} workshop_id={workshop_id}")
     return SuccessResponse(message=f"Pit {pit.display_name} deleted")
+
+
+# ─── Root level pit routing ───────────────────────────────────────────────────
+@root_router.get("/{pit_id}")
+async def get_pit_by_id(
+    pit_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_staff_or_above),
+):
+    """Get a single pit's full detail without knowing workshop_id."""
+    pit = await db.get(Pit, pit_id)
+    if pit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pit not found")
+        
+    from src.utils.constants import UserRole
+    if (
+        current_user.role != UserRole.SUPER_ADMIN.value
+        and current_user.workshop_id != pit.workshop_id
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        
+    return _pit_response(pit)
+

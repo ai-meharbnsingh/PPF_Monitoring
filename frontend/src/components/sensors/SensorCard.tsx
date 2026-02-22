@@ -20,25 +20,24 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
   return (
     <div
       className={clsx(
-        'card border-2 transition-all duration-300',
+        'card border transition-all duration-300 hover:scale-[1.01]',
         colors.border,
-        'hover:shadow-md',
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
         <div>
-          <h3 className="font-semibold text-gray-900 text-sm">{pit.name}</h3>
-          <p className="text-xs text-gray-400">Pit #{pit.pit_number}</p>
+          <h3 className="font-semibold text-white text-sm tracking-wide">{pit.name}</h3>
+          <p className="text-xs text-gray-600 mt-0.5">Pit #{pit.pit_number}</p>
         </div>
         <div className="flex items-center gap-2">
           {isOnline ? (
-            <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
               <Wifi className="h-3.5 w-3.5" />
               Live
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5 text-xs text-gray-600">
               <WifiOff className="h-3.5 w-3.5" />
               Offline
             </span>
@@ -79,15 +78,15 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100">
-        <span className="text-xs text-gray-400">
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.08]">
+        <span className="text-xs text-gray-600">
           {sensors?.last_reading_at
             ? `Updated ${formatRelative(sensors.last_reading_at)}`
             : 'No data'}
         </span>
         <Link
           to={`/pits/${pit.id}`}
-          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+          className="flex items-center gap-1 text-xs text-electric-blue hover:text-white font-medium transition-colors"
         >
           Details
           <ChevronRight className="h-3 w-3" />

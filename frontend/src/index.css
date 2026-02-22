@@ -3,25 +3,32 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-matte-black text-white font-sans antialiased;
   }
 }
 
 @layer components {
   .sidebar-link {
     @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-           text-gray-600 hover:text-gray-900 hover:bg-gray-100
+           text-gray-400 hover:text-white hover:bg-white/5
            transition-colors duration-150;
   }
   .sidebar-link.active {
-    @apply text-brand-700 bg-brand-50;
+    @apply text-electric-blue bg-electric-blue/10;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    background: rgba(18, 18, 18, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    @apply rounded-2xl;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   .status-dot {
     @apply inline-block w-2 h-2 rounded-full;
@@ -30,10 +37,10 @@
 
 /* Video.js overrides */
 .video-js .vjs-big-play-button {
-  @apply border-brand-500;
+  border-color: #00f0ff;
 }
 .video-js:hover .vjs-big-play-button {
-  @apply bg-brand-600;
+  background-color: #00f0ff;
 }
 
 /* Scrollbar */
@@ -42,11 +49,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: #0a0a0a;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  background: #2a2a2a;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  background: #3a3a3a;
 }

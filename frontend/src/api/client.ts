@@ -34,11 +34,13 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
-    // Only attempt refresh once per request, and not for the refresh endpoint itself
+    // Only attempt refresh once per request, and not for auth endpoints themselves
+    // (login returning 401 = bad credentials, not an expired session)
     if (
       error.response?.status === 401 &&
       !original._retry &&
-      !original.url?.includes('/auth/refresh-token')
+      !original.url?.includes('/auth/refresh-token') &&
+      !original.url?.includes('/auth/login')
     ) {
       original._retry = true
 
@@ -81,4 +83,5 @@ apiClient.interceptors.response.use(
   },
 )
 
+export { apiClient as client }
 export default apiClient

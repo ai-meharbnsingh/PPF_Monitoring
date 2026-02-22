@@ -117,7 +117,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         except Exception as e:
             await session.rollback()
-            logger.error(f"Database session error, rolling back: {e}", exc_info=True)
+            # Escape curly braces in str(e) to prevent loguru from treating them as format specs
+            err_str = str(e).replace("{", "{{").replace("}", "}}")
+            logger.exception(f"Database session error, rolling back: {err_str}")
             raise
 
 

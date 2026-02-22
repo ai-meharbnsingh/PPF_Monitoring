@@ -3,8 +3,8 @@
 
 > **Project:** Smart PPF Workshop Monitoring System (IoT SaaS)
 > **Business Model:** Hardware Kit + Monthly Subscription (₹1,500/pit/month)
-> **Last Updated:** 2026-02-22
-> **Overall Progress:** Phase 1A-H Backend ✅ | Frontend ✅ | End-to-End Testing ✅ (smoke) | Demo ⏳
+> **Last Updated:** 2026-02-23
+> **Overall Progress:** Phase 1A-H Backend ✅ | Frontend ✅ | End-to-End Testing 🔄 (active) | Demo 🔄
 
 ---
 
@@ -34,6 +34,9 @@
 ║  Git + GitHub     │  ✅ Done       │  github.com/ai-meharbnsingh  ║
 ║  Deployment       │  ❌ 0%         │  No live server yet           ║
 ║  Hardware         │  ❌ 0%         │  Not ordered yet              ║
+║  Frontend README  │  ✅ Done       │  frontend/README.md created   ║
+║  Root README      │  ✅ Done       │  README.md created 2026-02-23 ║
+║  E2E Tests        │  ✅ 8/8 pass   │  Playwright smoke (mocked API) ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -258,7 +261,7 @@
 | 1.H.2 | Seed sensor types (DHT22, PMS5003, BME680) | ✅ | `002_seed_sensor_types.sql` — 3 types seeded |
 | 1.H.3 | Create super_admin account via admin script | ✅ | `POST /api/v1/admin/seed-super-admin` — username: super_admin |
 | 1.H.4 | End-to-end smoke test with real MQTT + PostgreSQL | ✅ | 12/12 API smoke tests passed (login, CRUD, auth, jobs) |
-| 1.H.5 | Test customer journey (create job → track → complete) | 🔄 | Basic job POST OK; full UI journey needs frontend running |
+| 1.H.5 | Test customer journey (create job → track → complete) | ✅ | 8/8 Playwright smoke tests pass (mocked API). BUG-001: staff assignment UI missing on JobDetailPage (API implemented). |
 | 1.H.6 | Test ESP32 → MQTT → Backend → WebSocket → Frontend | ⏳ | Needs real hardware + Mosquitto broker |
 | 1.H.7 | Demo to client (friend's workshop) | ❌ | Ready to demo — backend + frontend both running locally |
 | 1.H.8 | Gather feedback | ❌ | After demo |
@@ -351,8 +354,8 @@
 | Firmware README | `firmware/README.md` | ✅ Complete |
 | Backend CHANGELOG | `backend/CHANGELOG.md` | ✅ Up to date |
 | Development Standards | `claude.md.md` | ✅ Complete |
-| Root README | `/README.md` | ❌ Missing |
-| Frontend README | `frontend/README.md` | ❌ (frontend not built) |
+| Root README | `/README.md` | ✅ Complete |
+| Frontend README | `frontend/README.md` | ✅ Complete |
 | Deployment Guide | `docs/DEPLOYMENT.md` | ❌ Missing |
 | Hardware Setup Guide | `docs/HARDWARE_SETUP.md` | ❌ Missing |
 
@@ -513,7 +516,7 @@ PPF_Factory/
 │
 ├── docker-compose.yml              ✅
 ├── claude.md.md                    ✅ Development standards
-└── README.md                       ❌ (missing root README)
+└── README.md                       ✅ (created 2026-02-23)
 ```
 
 ---

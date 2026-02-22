@@ -20,6 +20,7 @@
   #include <ETH.h>
 #else
   #include <WiFi.h>
+  #include <WiFiManager.h>   // Captive-portal provisioning — credentials saved to NVS
 #endif
 
 

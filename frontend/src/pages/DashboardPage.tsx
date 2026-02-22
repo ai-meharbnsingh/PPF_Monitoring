@@ -44,12 +44,10 @@ export default function DashboardPage() {
   if (isLoading && pits.length === 0) {
     return (
       <div className="p-6">
-        <div className="mb-6 h-7 w-48">
-          <Skeleton className="h-7 w-48" />
-        </div>
+        <Skeleton className="h-7 w-48 mb-6 bg-white/5" />
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-56" />
+            <Skeleton key={i} className="h-56 bg-white/5" />
           ))}
         </div>
       </div>
@@ -61,15 +59,15 @@ export default function DashboardPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl font-bold text-white tracking-wide">Dashboard</h1>
           {lastUpdated && (
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5">
               Live · Last polled {formatRelative(lastUpdated)}
             </p>
           )}
         </div>
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={loadData}
           isLoading={isLoading}
@@ -80,14 +78,14 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="mb-4 p-3 rounded-lg text-sm text-red-400 border border-red-500/30 bg-red-500/10">
           {error}
         </div>
       )}
 
       {pits.length === 0 ? (
         <EmptyState
-          icon={<LayoutDashboard className="h-12 w-12" />}
+          icon={<LayoutDashboard className="h-12 w-12 text-electric-blue/50" />}
           title="No pits found"
           description="Add pits to your workshop to start monitoring."
         />

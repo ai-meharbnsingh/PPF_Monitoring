@@ -17,7 +17,9 @@ server:
   reload: true                         # set false in production
   cors_origins:
     - "http://localhost:3000"          # React dev server
-    - "http://localhost:5173"          # Vite dev server
+    - "http://localhost:5173"          # Vite dev server (default)
+    - "http://localhost:5174"          # Vite dev server (fallback when 5173 in use)
+    - "http://localhost:5175"          # Vite dev server (launch.json configured port)
     # Add production domain before deploying
 
 database:

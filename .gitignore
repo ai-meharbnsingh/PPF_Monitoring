@@ -65,3 +65,16 @@ desktop.ini
 # ── Docker volumes ───────────────────────────────────────────
 docker/data/
 docker/logs/
+
+# ── Playwright test artifacts ─────────────────────────────────
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright-report-integration/
+
+# ── PlatformIO build cache ────────────────────────────────────
+.pio/
+firmware/.pio/
+
+# ── Windows NUL device artifacts ─────────────────────────────
+nul
+firmware/nul

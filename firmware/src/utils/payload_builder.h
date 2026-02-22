@@ -66,6 +66,10 @@
   #include "sensors/pms5003.h"
 #endif
 
+#ifdef SENSOR_CONFIG_DHT22
+  #include "sensors/dht22.h"
+#endif
+
 #ifdef SENSOR_CONFIG_BME680
   #include "sensors/bme680.h"
 #endif
@@ -90,6 +94,13 @@ public:
                                    const char*           timestamp,
                                    char*                 buf,
                                    size_t                len);
+#endif
+
+#ifdef SENSOR_CONFIG_DHT22
+    static bool buildDHT22Only(const DHT22Reading& dht,
+                                const char*         timestamp,
+                                char*               buf,
+                                size_t              len);
 #endif
 
     /**

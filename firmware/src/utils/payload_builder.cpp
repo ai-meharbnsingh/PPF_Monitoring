@@ -64,6 +64,38 @@ bool PayloadBuilder::buildDHT22PMS5003(const DHT22Reading&  dht,
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DHT22-only payload (testing — no PMS5003)
+// ─────────────────────────────────────────────────────────────────────────────
+#ifdef SENSOR_CONFIG_DHT22
+
+bool PayloadBuilder::buildDHT22Only(const DHT22Reading& dht,
+                                     const char*         timestamp,
+                                     char*               buf,
+                                     size_t              len)
+{
+    StaticJsonDocument<192> doc;
+
+    doc["device_id"]   = DEVICE_ID;
+    doc["license_key"] = LICENSE_KEY;
+    doc["sensor_type"] = "DHT11";   // Confirmed DHT11 by auto-detect test (5/5 valid, DHT22 0/5)
+    doc["temperature"] = serialized(String(dht.temperature, 1));
+    doc["humidity"]    = serialized(String(dht.humidity,    1));
+    doc["timestamp"]   = timestamp;
+
+    size_t written = serializeJson(doc, buf, len);
+    if (written == 0 || written >= len) {
+        DEBUG_PRINTLN("[PAYLOAD] ERROR — DHT11Only serialization failed");
+        return false;
+    }
+
+    DEBUG_PRINTF("[PAYLOAD] DHT11Only JSON (%d bytes): %s\n", written, buf);
+    return true;
+}
+
+#endif  // SENSOR_CONFIG_DHT22
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BME680 payload
 // ─────────────────────────────────────────────────────────────────────────────
 #ifdef SENSOR_CONFIG_BME680

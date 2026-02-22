@@ -42,19 +42,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo card */}
+    <div className="min-h-screen bg-matte-black flex items-center justify-center p-4">
+      {/* Subtle background glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,240,255,0.06) 0%, transparent 70%)',
+        }}
+      />
+
+      <div className="relative w-full max-w-sm">
+        {/* Logo & title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 shadow-lg mb-4">
-            <span className="text-white font-bold text-lg">PPF</span>
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            style={{
+              background: 'rgba(0,240,255,0.12)',
+              border: '1px solid rgba(0,240,255,0.4)',
+              boxShadow: '0 0 30px rgba(0,240,255,0.15)',
+            }}
+          >
+            <span className="text-electric-blue font-bold text-xl tracking-wider">PPF</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">PPF Monitor</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wide">PPF Monitor</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
         {/* Form card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div
+          className="rounded-2xl p-8"
+          style={{
+            background: 'rgba(18,18,18,0.9)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <Input
               label="Username"
@@ -75,9 +97,9 @@ export default function LoginPage() {
 
             {/* API error */}
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-                <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="flex items-start gap-2 p-3 rounded-lg border border-red-500/30 bg-red-500/10">
+                <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
@@ -87,7 +109,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-600 mt-6 tracking-wide">
           PPF Workshop Monitoring System
         </p>
       </div>

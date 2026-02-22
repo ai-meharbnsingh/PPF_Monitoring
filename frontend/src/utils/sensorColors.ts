@@ -1,39 +1,39 @@
 import type { AlertSeverity, JobStatus, SensorStatus } from '@/types/common'
 import type { LatestSensorSummary } from '@/types/sensor'
 
-// ─── Sensor status color system ───────────────────────────────────────────────
+// ─── Sensor status color system (dark theme) ──────────────────────────────────
 
 export const STATUS_COLORS: Record<
   SensorStatus,
   { bg: string; border: string; text: string; dot: string; ring: string }
 > = {
   good: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-400',
-    text: 'text-emerald-700',
-    dot: 'bg-emerald-500',
-    ring: 'ring-emerald-400',
+    bg:     'bg-emerald-500/10',
+    border: 'border-emerald-500/40',
+    text:   'text-emerald-400',
+    dot:    'bg-emerald-400',
+    ring:   'ring-emerald-400/50',
   },
   warning: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-400',
-    text: 'text-amber-700',
-    dot: 'bg-amber-500',
-    ring: 'ring-amber-400',
+    bg:     'bg-amber-500/10',
+    border: 'border-amber-500/40',
+    text:   'text-amber-400',
+    dot:    'bg-amber-400',
+    ring:   'ring-amber-400/50',
   },
   critical: {
-    bg: 'bg-red-50',
-    border: 'border-red-500',
-    text: 'text-red-700',
-    dot: 'bg-red-600',
-    ring: 'ring-red-500',
+    bg:     'bg-red-500/10',
+    border: 'border-red-500/40',
+    text:   'text-red-400',
+    dot:    'bg-red-400',
+    ring:   'ring-red-400/50',
   },
   unknown: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-300',
-    text: 'text-gray-500',
-    dot: 'bg-gray-400',
-    ring: 'ring-gray-300',
+    bg:     'bg-white/5',
+    border: 'border-white/15',
+    text:   'text-gray-500',
+    dot:    'bg-gray-500',
+    ring:   'ring-gray-500/30',
   },
 }
 
@@ -53,58 +53,58 @@ export function getWorstStatus(summary: LatestSensorSummary): SensorStatus {
   }, 'unknown' as SensorStatus)
 }
 
-// ─── Alert severity colors ────────────────────────────────────────────────────
+// ─── Alert severity colors (dark theme) ──────────────────────────────────────
 
 export const SEVERITY_COLORS: Record<
   AlertSeverity,
   { bg: string; text: string; border: string }
 > = {
   info: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
-    border: 'border-blue-300',
+    bg:     'bg-electric-blue/10',
+    text:   'text-electric-blue',
+    border: 'border-electric-blue/30',
   },
   warning: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
-    border: 'border-amber-300',
+    bg:     'bg-amber-500/10',
+    text:   'text-amber-400',
+    border: 'border-amber-500/30',
   },
   critical: {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
-    border: 'border-red-300',
+    bg:     'bg-red-500/10',
+    text:   'text-red-400',
+    border: 'border-red-500/30',
   },
 }
 
-// ─── Job status colors ────────────────────────────────────────────────────────
+// ─── Job status colors (dark theme) ──────────────────────────────────────────
 
 export const JOB_STATUS_COLORS: Record<
   JobStatus,
   { bg: string; text: string; dot: string }
 > = {
   waiting: {
-    bg: 'bg-slate-100',
-    text: 'text-slate-700',
-    dot: 'bg-slate-500',
+    bg:   'bg-white/[0.08]',
+    text: 'text-gray-400',
+    dot:  'bg-gray-500',
   },
   in_progress: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
-    dot: 'bg-blue-500',
+    bg:   'bg-electric-blue/10',
+    text: 'text-electric-blue',
+    dot:  'bg-electric-blue',
   },
   quality_check: {
-    bg: 'bg-purple-100',
-    text: 'text-purple-800',
-    dot: 'bg-purple-500',
+    bg:   'bg-purple-500/10',
+    text: 'text-purple-400',
+    dot:  'bg-purple-400',
   },
   completed: {
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    dot: 'bg-green-500',
+    bg:   'bg-emerald-500/10',
+    text: 'text-emerald-400',
+    dot:  'bg-emerald-400',
   },
   cancelled: {
-    bg: 'bg-red-100',
-    text: 'text-red-700',
-    dot: 'bg-red-500',
+    bg:   'bg-red-500/10',
+    text: 'text-red-400',
+    dot:  'bg-red-400',
   },
 }

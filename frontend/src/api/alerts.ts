@@ -19,11 +19,14 @@ export const alertsApi = {
     workshopId: number,
     params?: AlertListParams,
   ): Promise<PaginatedResponse<AlertResponse>> => {
-    const resp = await apiClient.get<PaginatedResponse<AlertResponse>>(
+    const resp = await apiClient.get<any>(
       `/workshops/${workshopId}/alerts`,
       { params },
     )
-    return resp.data
+    const payload = resp.data
+    if (payload?.data?.items !== undefined) return payload.data
+    if (payload?.items !== undefined) return payload
+    return { items: [], total: 0, page: 1, page_size: 20, total_pages: 1, has_next: false, has_prev: false }
   },
 
   acknowledge: async (

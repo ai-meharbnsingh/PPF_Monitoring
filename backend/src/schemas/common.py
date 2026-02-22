@@ -60,11 +60,14 @@ def build_paginated(
     """Build pagination metadata dict for use in route handlers."""
     total_pages = (total + page_size - 1) // page_size if total > 0 else 0
     return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "total_pages": total_pages,
-        "has_next": page < total_pages,
-        "has_prev": page > 1,
+        "success": True,
+        "data": {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
     }

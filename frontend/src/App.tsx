@@ -18,6 +18,7 @@ const AlertConfigPage = lazy(() => import('@/pages/AlertConfigPage'))
 const DevicesPage = lazy(() => import('@/pages/DevicesPage'))
 const StaffPage = lazy(() => import('@/pages/StaffPage'))
 const TrackingPage = lazy(() => import('@/pages/TrackingPage'))
+const AdminPage = lazy(() => import('@/pages/AdminPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function Lazy({ element }: { element: React.ReactNode }) {
@@ -94,6 +95,10 @@ const router = createBrowserRouter([
           {
             path: '/staff',
             element: <Lazy element={<StaffPage />} />,
+          },
+          {
+            path: '/admin',
+            element: <Lazy element={<AdminPage />} />,
           },
         ],
       },

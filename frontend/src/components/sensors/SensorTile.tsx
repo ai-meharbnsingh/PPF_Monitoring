@@ -5,7 +5,7 @@ import { SENSOR_UNITS, SENSOR_LABELS } from '@/utils/constants'
 import { formatSensorValue } from '@/utils/formatters'
 
 interface SensorTileProps {
-  metric: string           // e.g. 'temperature', 'humidity', 'pm25'
+  metric: string
   value: number | null
   status: SensorStatus
   className?: string
@@ -19,19 +19,19 @@ export function SensorTile({ metric, value, status, className }: SensorTileProps
   return (
     <div
       className={clsx(
-        'flex flex-col gap-1 p-3 rounded-xl border-2 transition-colors duration-300',
+        'flex flex-col gap-1 p-3 rounded-xl border transition-colors duration-300',
         colors.bg,
         colors.border,
         className,
       )}
     >
-      <span className={clsx('text-xs font-medium', colors.text)}>{label}</span>
+      <span className={clsx('text-xs font-medium tracking-wide', colors.text)}>{label}</span>
       <div className="flex items-baseline gap-1">
-        <span className={clsx('text-xl font-bold', colors.text)}>
+        <span className={clsx('text-2xl font-bold', colors.text)}>
           {value != null ? formatSensorValue(value) : '—'}
         </span>
         {value != null && (
-          <span className={clsx('text-xs', colors.text, 'opacity-70')}>{unit}</span>
+          <span className={clsx('text-xs opacity-60', colors.text)}>{unit}</span>
         )}
       </div>
     </div>

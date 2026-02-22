@@ -19,11 +19,14 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-10 h-16 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
+    <header
+      className="sticky top-0 z-10 h-16 flex items-center px-4 gap-4 border-b border-white/[0.08]"
+      style={{ background: 'rgba(18,18,18,0.95)', backdropFilter: 'blur(12px)' }}
+    >
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
-        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 lg:hidden transition-colors"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -36,13 +39,13 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
       {/* User menu */}
       <div className="flex items-center gap-3">
-        <span className="hidden sm:block text-sm text-gray-600">
+        <span className="hidden sm:block text-sm text-gray-400 font-medium">
           {user?.first_name ?? user?.username}
         </span>
         <button
           onClick={handleLogout}
           title="Log out"
-          className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
         >
           <LogOut className="h-4 w-4" />
         </button>

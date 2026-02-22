@@ -77,7 +77,7 @@ class TestListWorkshops:
         resp = await client.get("/api/v1/workshops/", headers=super_admin_headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert "items" in data or isinstance(data, list)
+        assert "data" in data or "items" in data.get("data", {})
 
     @pytest.mark.asyncio
     async def test_unauthenticated_cannot_list(self, client: AsyncClient):

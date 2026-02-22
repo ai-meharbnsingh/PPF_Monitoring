@@ -10,10 +10,15 @@ import type {
 
 export const devicesApi = {
   list: async (workshopId: number): Promise<PaginatedResponse<DeviceResponse>> => {
-    const resp = await apiClient.get<PaginatedResponse<DeviceResponse>>(
+    const resp = await apiClient.get<any>(
       `/workshops/${workshopId}/devices`,
     )
-    return resp.data
+    const payload = resp.data
+
+    // Check if it's the wrapped structure { success: true, data: { items: [] } } or flat
+    if (payload?.data?.items) return payload.data
+    if (payload?.items) return payload
+    return { items: [], total: 0, page: 1, page_size: 50, total_pages: 1, has_next: false, has_prev: false }
   },
 
   register: async (

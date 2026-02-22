@@ -31,7 +31,6 @@ const RANGE_OPTIONS: { value: Range; label: string; hours: number }[] = [
 
 const formatXAxis = (iso: string, hours: number) => {
   try {
-    if (hours <= 6) return format(parseISO(iso), 'HH:mm')
     if (hours <= 24) return format(parseISO(iso), 'HH:mm')
     return format(parseISO(iso), 'dd MMM HH:mm')
   } catch {
@@ -45,6 +44,14 @@ interface ChartDataPoint {
   humidity?: number
   pm25?: number
   pm10?: number
+}
+
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: '#121212',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '12px',
+  fontSize: 12,
+  color: '#e5e7eb',
 }
 
 export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps) {
@@ -70,7 +77,7 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
         pm25: r.pm25 ?? undefined,
         pm10: r.pm10 ?? undefined,
       }))
-      setData(points.reverse()) // chronological order
+      setData(points.reverse())
     } catch {
       setData([])
     } finally {
@@ -91,10 +98,10 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
             key={r.value}
             onClick={() => setRange(r.value)}
             className={clsx(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
+              'px-3 py-1 rounded-lg text-xs font-medium tracking-wide transition-all',
               range === r.value
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-500 hover:bg-gray-100',
+                ? 'bg-electric-blue text-matte-black'
+                : 'text-gray-500 hover:bg-white/5 hover:text-gray-300',
             )}
           >
             {r.label}
@@ -107,56 +114,59 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
           <Spinner />
         </div>
       ) : data.length === 0 ? (
-        <div className="flex items-center justify-center h-48 text-sm text-gray-400">
+        <div className="flex items-center justify-center h-48 text-sm text-gray-600">
           No data for this period
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
               dataKey="time"
               tickFormatter={(v: string) => formatXAxis(v, selectedRange.hours)}
-              tick={{ fontSize: 10 }}
-              stroke="#d1d5db"
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              stroke="rgba(255,255,255,0.05)"
             />
-            <YAxis tick={{ fontSize: 10 }} stroke="#d1d5db" />
+            <YAxis
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              stroke="rgba(255,255,255,0.05)"
+            />
             <Tooltip
               labelFormatter={(label: string) => format(parseISO(label), 'dd MMM HH:mm')}
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+              contentStyle={CHART_TOOLTIP_STYLE}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
             <Line
               type="monotone"
               dataKey="temp"
               name="Temp (°C)"
-              stroke="#ef4444"
+              stroke="#f87171"
               dot={false}
-              strokeWidth={1.5}
+              strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="humidity"
               name="Humidity (%)"
-              stroke="#3b82f6"
+              stroke="#00f0ff"
               dot={false}
-              strokeWidth={1.5}
+              strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="pm25"
               name="PM2.5 (μg/m³)"
-              stroke="#f97316"
+              stroke="#fb923c"
               dot={false}
-              strokeWidth={1.5}
+              strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="pm10"
               name="PM10 (μg/m³)"
-              stroke="#8b5cf6"
+              stroke="#a78bfa"
               dot={false}
-              strokeWidth={1.5}
+              strokeWidth={2}
             />
           </LineChart>
         </ResponsiveContainer>

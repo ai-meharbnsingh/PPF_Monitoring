@@ -16,9 +16,16 @@
 #pragma once
 
 // ─── SENSOR HARDWARE SELECTION ───────────────────────────────────────────────
-// Uncomment ONE configuration:
+// Set via platformio.ini build_flags:
+//   -DSENSOR_DHT22_ONLY   → DHT22 only (no PMS5003 warmup — use for testing)
+//   (default)             → DHT22 + PMS5003 (production kit)
+// OR uncomment SENSOR_CONFIG_BME680 below for BME680-based kit.
 
-#define SENSOR_CONFIG_DHT22_PMS5003   // Primary: DHT22 + PMS5003
+#ifdef SENSOR_DHT22_ONLY
+  #define SENSOR_CONFIG_DHT22         // DHT22 only — no PMS5003, no 30s warmup
+#else
+  #define SENSOR_CONFIG_DHT22_PMS5003 // Production: DHT22 + PMS5003
+#endif
 // #define SENSOR_CONFIG_BME680       // Alternative: BME680 standalone
 
 
@@ -26,24 +33,38 @@
 // After registering the device via POST /api/v1/workshops/{id}/devices,
 // copy the device_id and license_key here.
 
-#define DEVICE_ID       "ESP32-A1B2C3D4E5F6"   // Replace with your MAC-based ID
-#define LICENSE_KEY     "LIC-XXXX-YYYY-ZZZZ"   // Replace with your license key
-#define WORKSHOP_ID     1                        // Your workshop ID (integer)
-#define PIT_ID          1                        // This device's pit ID (integer)
+#define DEVICE_ID       "ESP32-PLACEHOLDER"      // Registered in backend DB — real MAC: 08:3a:f2:a9:f0:84
+#define LICENSE_KEY     "LIC-608Z-5442-TXXP"    // Registered 2026-02-22
+#define WORKSHOP_ID     1                        // "Demo Workshop" (id=1)
+#define PIT_ID          10                       // "Demo Pit 1" in workshop 1
 #define FIRMWARE_VER    "1.0.0"
 
 
 // ─── NETWORK: WiFi (used when USE_WIFI is set in platformio.ini) ──────────────
-#define WIFI_SSID       "YourWiFiSSID"
-#define WIFI_PASSWORD   "YourWiFiPassword"
-#define WIFI_TIMEOUT_MS 15000                    // 15 seconds
+// These are the FALLBACK credentials used when no credentials are saved in NVS.
+// On first boot (or after wm.resetSettings()), the device opens a captive portal
+// instead — connect to the AP below and enter your WiFi password via browser.
+#define WIFI_SSID       "LAPTOP-U2GTVCR8 5179"  // Windows Mobile Hotspot — reference only
+#define WIFI_PASSWORD   "6w0)177M"               // Reference only (stored in NVS by portal)
+#define WIFI_TIMEOUT_MS 15000                    // 15 seconds connect attempt before portal
+
+// ─── CAPTIVE PORTAL (WiFiManager) ─────────────────────────────────────────────
+// On first boot (no NVS creds) the ESP32 broadcasts a soft-AP:
+//   SSID:     PROV_AP_NAME  (e.g. "PPF-Monitor")
+//   Password: PROV_AP_PASSWORD  ("" = open/no password)
+// Connect your phone/laptop to that AP → browser opens to 192.168.4.1
+// Enter your factory WiFi SSID + password → saved to NVS flash.
+// All future boots auto-connect with those saved credentials.
+#define PROV_AP_NAME        "PPF-Monitor"    // Portal AP SSID (MAC suffix appended automatically)
+#define PROV_AP_PASSWORD    ""               // Leave empty for open portal (no password needed)
+#define PROV_TIMEOUT_SEC    120              // Portal auto-closes after 120 s if nobody saves creds
 
 
 // ─── MQTT BROKER ──────────────────────────────────────────────────────────────
-#define MQTT_BROKER_HOST    "192.168.1.100"      // Your MQTT broker IP
+#define MQTT_BROKER_HOST    "192.168.137.1"      // Windows Mobile Hotspot IP (fixed — always this on hotspot adapter)
 #define MQTT_BROKER_PORT    1883
-#define MQTT_USERNAME       "mqtt_user"          // Match Mosquitto config
-#define MQTT_PASSWORD       "mqtt_password"      // Match Mosquitto config
+#define MQTT_USERNAME       "ppf_backend"         // Must match backend .env MQTT_USERNAME
+#define MQTT_PASSWORD       "BsW0mmVr5CoDAzW21ibADB7t-kM" // Must match backend .env MQTT_PASSWORD
 #define MQTT_KEEPALIVE_SEC  60
 #define MQTT_QOS            1
 #define MQTT_RECONNECT_DELAY_MS  5000
@@ -72,7 +93,7 @@
 //   GPIO25: ETH_RXD0  GPIO26: ETH_RXD1  GPIO27: ETH_CRSDV
 //
 // SAFE GPIO for sensors:
-#define PIN_DHT22           4     // DHT22 DATA → GPIO4 (10kΩ pull-up to 3.3V)
+#define PIN_DHT22           5     // DHT22 DATA → GPIO5 (testing PCB) — change to 4 on final kit
 #define PIN_PMS5003_RX      32    // PMS5003 TX → GPIO32 (ESP32 receives)
 #define PIN_PMS5003_TX      33    // PMS5003 RX → GPIO33 (ESP32 transmits)
 #define PIN_STATUS_LED      2     // On-board blue LED (GPIO2)
@@ -87,8 +108,10 @@
 #endif
 
 
-// ─── DHT22 SETTINGS ───────────────────────────────────────────────────────────
-#define DHT_TYPE            DHT22
+// ─── DHT SETTINGS ─────────────────────────────────────────────────────────────
+// Confirmed DHT11 by sensor auto-detect test (GPIO5, 5/5 valid reads)
+// DHT22/AM2305B on same pin returned 0/5 — sensor is definitively DHT11
+#define DHT_TYPE            DHT11
 #define DHT_READ_RETRY      3     // Retry attempts on read failure
 #define DHT_READ_DELAY_MS   500   // Delay between retries
 
@@ -111,11 +134,19 @@
 
 
 // ─── WATCHDOG ─────────────────────────────────────────────────────────────────
-#define WATCHDOG_TIMEOUT_SEC  30   // Reboot if loop stalls this long
+#define WATCHDOG_TIMEOUT_SEC  90   // Must be > PMS5003_WARMUP_MS/1000 (30s) + Ethernet DHCP + MQTT connect
+                                   // 30s warmup + ~15s DHCP + ~5s MQTT = ~50s worst case → 90s is safe
 
 
 // ─── DEBUG SERIAL ─────────────────────────────────────────────────────────────
 #define SERIAL_BAUD         115200
-#define DEBUG_PRINT(x)      Serial.print(x)
-#define DEBUG_PRINTLN(x)    Serial.println(x)
-#define DEBUG_PRINTF(...)   Serial.printf(__VA_ARGS__)
+// Guard against redefinition: DHT.h also defines DEBUG_PRINT / DEBUG_PRINTLN
+#ifndef DEBUG_PRINT
+  #define DEBUG_PRINT(x)    Serial.print(x)
+#endif
+#ifndef DEBUG_PRINTLN
+  #define DEBUG_PRINTLN(x)  Serial.println(x)
+#endif
+#ifndef DEBUG_PRINTF
+  #define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#endif

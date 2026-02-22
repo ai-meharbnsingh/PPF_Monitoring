@@ -131,23 +131,25 @@ bool PMS5003Sensor::_parseFrame(const uint8_t* buf, PMS5003Reading& out) const {
         return false;
     }
 
-    // Helper lambda — combine two consecutive bytes into a uint16
-    auto word = [&](uint8_t i) -> uint16_t {
+    // Helper lambda — combine two consecutive bytes into a uint16.
+    // Named 'b16' (not 'word') to avoid collision with Arduino's
+    // #define word(...) makeWord(...) macro which is not linked on ESP32.
+    auto b16 = [&](uint8_t i) -> uint16_t {
         return ((uint16_t)buf[i] << 8) | buf[i + 1];
     };
 
     // Atmospheric concentration values (bytes 10–15)
-    out.pm1  = word(10);
-    out.pm25 = word(12);
-    out.pm10 = word(14);
+    out.pm1  = b16(10);
+    out.pm25 = b16(12);
+    out.pm10 = b16(14);
 
     // Particle counts per 0.1 L (bytes 16–27)
-    out.particles_03um  = word(16);
-    out.particles_05um  = word(18);
-    out.particles_10um  = word(20);
-    out.particles_25um  = word(22);
-    out.particles_50um  = word(24);
-    out.particles_100um = word(26);
+    out.particles_03um  = b16(16);
+    out.particles_05um  = b16(18);
+    out.particles_10um  = b16(20);
+    out.particles_25um  = b16(22);
+    out.particles_50um  = b16(24);
+    out.particles_100um = b16(26);
 
     out.valid = true;
     return true;

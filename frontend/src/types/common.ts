@@ -45,6 +45,15 @@ export type SensorTypeCode = 'DHT22' | 'PMS5003' | 'BME680'
 
 export type PitStatus = 'active' | 'inactive' | 'maintenance'
 
+export interface Workshop {
+  id: number
+  name: string
+  slug: string
+  contact_email: string | null
+  contact_phone: string | null
+  created_at: string
+}
+
 // ─── API response wrappers ────────────────────────────────────────────────────
 
 export interface ApiSuccessResponse<T> {

@@ -115,6 +115,7 @@ app.include_router(websocket.router)
 # Workshop & pits
 app.include_router(workshops.router, prefix=API)
 app.include_router(pits.router, prefix=API)
+app.include_router(pits.root_router, prefix=API)
 
 # Devices
 app.include_router(devices.router, prefix=API)
