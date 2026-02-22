@@ -72,8 +72,8 @@ def upgrade() -> None:
         sa.Column("last_login", sa.DateTime(timezone=True), nullable=True),
         sa.Column("login_attempt_count", sa.Integer(), default=0, nullable=False),
         sa.Column("locked_until", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
     op.create_index("ix_users_username", "users", ["username"])
     op.create_index("ix_users_email", "users", ["email"])
@@ -99,8 +99,8 @@ def upgrade() -> None:
         sa.Column("subscription_expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("timezone", sa.String(50), default="Asia/Kolkata", nullable=False),
         sa.Column("is_active", sa.Boolean(), default=True, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
     op.create_index("ix_workshops_slug", "workshops", ["slug"], unique=True)
     op.create_index("ix_workshops_is_active", "workshops", ["is_active"])
@@ -136,8 +136,8 @@ def upgrade() -> None:
         sa.Column("camera_username", sa.String(50), nullable=True),
         sa.Column("camera_is_online", sa.Boolean(), default=False, nullable=False),
         sa.Column("camera_last_seen", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
         sa.UniqueConstraint("workshop_id", "pit_number", name="uq_pit_workshop_number"),
     )
     op.create_index("ix_pits_workshop_id", "pits", ["workshop_id"])
@@ -163,8 +163,8 @@ def upgrade() -> None:
         sa.Column("last_mqtt_message", sa.DateTime(timezone=True), nullable=True),
         sa.Column("report_interval_seconds", sa.Integer(), default=10, nullable=False),
         sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
     op.create_index("ix_devices_device_id", "devices", ["device_id"], unique=True)
     op.create_index("ix_devices_workshop_id", "devices", ["workshop_id"])
@@ -192,8 +192,8 @@ def upgrade() -> None:
         sa.Column("payment_method", sa.String(50), nullable=True),
         sa.Column("payment_reference", sa.String(100), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
     op.create_index("ix_subscriptions_device_id", "subscriptions", ["device_id"])
     op.create_index("ix_subscriptions_status", "subscriptions", ["status"])
@@ -233,7 +233,7 @@ def upgrade() -> None:
         sa.Column("validation_notes", sa.Text(), nullable=True),
         # Timestamps
         sa.Column("device_timestamp", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_sensor_data_pit_created", "sensor_data", ["pit_id", "created_at"])
     op.create_index("ix_sensor_data_workshop_created", "sensor_data", ["workshop_id", "created_at"])
@@ -269,8 +269,8 @@ def upgrade() -> None:
         sa.Column("quoted_price", sa.Numeric(10, 2), nullable=True),
         sa.Column("currency", sa.String(3), default="INR", nullable=False),
         sa.Column("created_by_user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
     op.create_index("ix_jobs_workshop_status", "jobs", ["workshop_id", "status"])
     op.create_index("ix_jobs_pit_id", "jobs", ["pit_id"])
@@ -286,7 +286,7 @@ def upgrade() -> None:
         sa.Column("new_status", sa.String(30), nullable=False),
         sa.Column("changed_by_user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_job_history_job_id", "job_status_history", ["job_id"])
 
@@ -310,7 +310,7 @@ def upgrade() -> None:
         sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("sms_sent", sa.Boolean(), default=False, nullable=False),
         sa.Column("email_sent", sa.Boolean(), default=False, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_alerts_workshop_ack", "alerts", ["workshop_id", "is_acknowledged"])
     op.create_index("ix_alerts_severity", "alerts", ["severity"])
@@ -338,8 +338,8 @@ def upgrade() -> None:
         sa.Column("notify_via_email", sa.Boolean(), default=False, nullable=False),
         sa.Column("notify_via_webhook", sa.Boolean(), default=False, nullable=False),
         sa.Column("webhook_url", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
     )
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -357,7 +357,7 @@ def upgrade() -> None:
         sa.Column("sent_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("acknowledged_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("issued_by_user_id", sa.Integer(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_device_commands_device_id", "device_commands", ["device_id"])
     op.create_index("ix_device_commands_status", "device_commands", ["status"])
@@ -377,7 +377,7 @@ def upgrade() -> None:
         sa.Column("new_data", sa.Text(), nullable=True),
         sa.Column("ip_address", sa.String(45), nullable=True),
         sa.Column("user_agent", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_audit_logs_workshop_id", "audit_logs", ["workshop_id"])
     op.create_index("ix_audit_logs_user_id", "audit_logs", ["user_id"])

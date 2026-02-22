@@ -52,7 +52,7 @@ class Pit(Base, TimestampMixin):
     # ── Relationships ──────────────────────────────────────────────────────
     workshop: Mapped["Workshop"] = relationship("Workshop", back_populates="pits")
     device: Mapped[Optional["Device"]] = relationship(
-        "Device", back_populates="pit", uselist=False
+        "Device", back_populates="pit", uselist=False, lazy="selectin"
     )
     jobs: Mapped[List["Job"]] = relationship(
         "Job", back_populates="pit", order_by="Job.created_at.desc()"

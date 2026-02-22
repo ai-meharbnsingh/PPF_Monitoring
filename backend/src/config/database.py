@@ -19,6 +19,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -109,6 +110,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
             await session.commit()
+        except HTTPException:
+            # HTTP exceptions are handled by FastAPI — just rollback and let them propagate.
+            # Do NOT log them as errors or re-raise from here; FastAPI handles the response.
+            await session.rollback()
+            raise
         except Exception as e:
             await session.rollback()
             logger.error(f"Database session error, rolling back: {e}", exc_info=True)
