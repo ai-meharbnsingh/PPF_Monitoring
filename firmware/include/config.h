@@ -33,10 +33,10 @@
 // After registering the device via POST /api/v1/workshops/{id}/devices,
 // copy the device_id and license_key here.
 
-#define DEVICE_ID       "ESP32-PLACEHOLDER"      // Registered in backend DB — real MAC: 08:3a:f2:a9:f0:84
-#define LICENSE_KEY     "LIC-608Z-5442-TXXP"    // Registered 2026-02-22
-#define WORKSHOP_ID     1                        // "Demo Workshop" (id=1)
-#define PIT_ID          10                       // "Demo Pit 1" in workshop 1
+#define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84 — Device ID: 24
+#define LICENSE_KEY     "LIC-KTI6-Q10T-Y24C"    // Registered 2026-02-23 — Workshop 33 / Pit 27
+#define WORKSHOP_ID     33                       // "Visual Demo WS" (id=33)
+#define PIT_ID          27                       // "Demo Pit Alpha" (id=27)
 #define FIRMWARE_VER    "1.0.0"
 
 
