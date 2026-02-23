@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import yaml
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     SERVER_HOST: str = _yaml_config["server"]["host"]
     SERVER_PORT: int = _yaml_config["server"]["port"]
     WORKERS: int = _yaml_config["server"]["workers"]
-    CORS_ORIGINS: List[str] = _yaml_config["server"]["cors_origins"]
+    CORS_ORIGINS: List[str] = Field(default_factory=lambda: _yaml_config["server"]["cors_origins"])
 
     # ── Database (sensitive values from .env) ────────────────────────────────
     DATABASE_USER: str

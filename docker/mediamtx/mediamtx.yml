@@ -33,9 +33,6 @@ rtsp: yes
 rtspAddress: :8554
 protocols: [tcp]           # tcp is more reliable behind NAT
 
-# Disable RTSPS (TLS) in dev — enable in production with proper certs
-rtsps: no
-
 # ─── HLS server ───────────────────────────────────────────────────────────────
 hls: yes
 hlsAddress: :8888
