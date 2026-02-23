@@ -3,16 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
 import { setCurrentJob } from '@/store/slices/jobsSlice'
 import { jobsApi } from '@/api/jobs'
+import { usersApi } from '@/api/users'
 import { JobStatusBadge } from '@/components/jobs/JobStatusBadge'
 import { JobStatusFlow } from '@/components/jobs/JobStatusFlow'
 import { JobTimeline } from '@/components/jobs/JobTimeline'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/Button'
 import { RoleGuard } from '@/components/auth/ProtectedRoute'
-import { ArrowLeft, Car, User, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Car, User, Copy, Check, Users } from 'lucide-react'
 import { formatDate, formatCurrency, formatDurationMinutes } from '@/utils/formatters'
 import { ALLOWED_TRANSITIONS, JOB_STATUS_LABELS } from '@/types/common'
 import type { JobStatus } from '@/types/common'
+import type { UserResponse } from '@/types'
 import toast from 'react-hot-toast'
 
 export default function JobDetailPage() {
@@ -23,19 +25,44 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true)
   const [transitioning, setTransitioning] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [staffList, setStaffList] = useState<UserResponse[]>([])
+  const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([])
+  const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
     if (!jobId) return
     setLoading(true)
     jobsApi
       .getJob(Number(jobId))
-      .then((j) => dispatch(setCurrentJob(j)))
+      .then((j) => {
+        dispatch(setCurrentJob(j))
+        setSelectedStaffIds(j.assigned_staff_ids ?? [])
+        // Fetch staff list for this workshop
+        usersApi
+          .list(j.workshop_id)
+          .then((r) => setStaffList(r.items.filter((u) => u.role === 'staff' && u.is_active)))
+          .catch(() => {/* non-critical */ })
+      })
       .catch(() => toast.error('Job not found'))
       .finally(() => setLoading(false))
     return () => {
       dispatch(setCurrentJob(null))
     }
   }, [jobId, dispatch])
+
+  const handleAssignStaff = async () => {
+    if (!job) return
+    setAssigning(true)
+    try {
+      const updated = await jobsApi.assignStaff(job.id, { staff_user_ids: selectedStaffIds })
+      dispatch(setCurrentJob(updated))
+      toast.success('Staff assignment saved')
+    } catch {
+      toast.error('Failed to assign staff')
+    } finally {
+      setAssigning(false)
+    }
+  }
 
   const handleTransition = async (newStatus: JobStatus) => {
     if (!job) return
@@ -256,6 +283,54 @@ export default function JobDetailPage() {
               </Button>
             </div>
           )}
+
+          {/* Assign Staff — BUG-001 FIX */}
+          <RoleGuard roles={['owner', 'super_admin']}>
+            <div className="card p-4">
+              <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-400" />
+                Assign Staff
+              </h2>
+              {staffList.length === 0 ? (
+                <p className="text-xs text-gray-400">No active staff in this workshop.</p>
+              ) : (
+                <div className="space-y-2 mb-3">
+                  {staffList.map((s) => {
+                    const displayName = s.first_name
+                      ? `${s.first_name} ${s.last_name ?? ''}`.trim()
+                      : s.username
+                    const checked = selectedStaffIds.includes(s.id)
+                    return (
+                      <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedStaffIds((prev) =>
+                              checked ? prev.filter((id) => id !== s.id) : [...prev, s.id],
+                            )
+                          }}
+                        />
+                        <span className="text-gray-800">{displayName}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+              {staffList.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="w-full"
+                  isLoading={assigning}
+                  onClick={() => void handleAssignStaff()}
+                >
+                  Save Assignment
+                </Button>
+              )}
+            </div>
+          </RoleGuard>
 
           {/* Car */}
           <div className="card p-4">

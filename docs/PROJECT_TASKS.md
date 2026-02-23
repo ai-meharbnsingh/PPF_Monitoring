@@ -3,8 +3,8 @@
 
 > **Project:** Smart PPF Workshop Monitoring System (IoT SaaS)
 > **Business Model:** Hardware Kit + Monthly Subscription (₹1,500/pit/month)
-> **Last Updated:** 2026-02-23
-> **Overall Progress:** Phase 1A-H Backend ✅ | Frontend ✅ | End-to-End Testing 🔄 (active) | Demo 🔄
+> **Last Updated:** 2026-02-24
+> **Overall Progress:** Phase 1A-H Backend ✅ | Frontend ✅ | E2E Mocked ✅ (8/8) | Live E2E Demo 🔄 (active) | Demo 🔄
 
 ---
 
@@ -29,14 +29,16 @@
 ║  ESP32 Firmware   │  ✅ 100%       │  All sensors + MQTT + OTA    ║
 ║  Docker Stack     │  ✅ 95%        │  Needs SSL certs for prod     ║
 ║  SQL Migrations   │  ✅ Applied    │  Alembic head + sensor types ║
-║  Frontend         │  ✅ 100%       │  React SPA complete — 60+ files║
+║  Frontend         │  ✅ 100%       │  React SPA — 60+ files, 13 pages║
 ║  Python 3.13 Compat│ ✅ 100%      │  All deps updated, 126 pass  ║
 ║  Git + GitHub     │  ✅ Done       │  github.com/ai-meharbnsingh  ║
 ║  Deployment       │  ❌ 0%         │  No live server yet           ║
 ║  Hardware         │  ❌ 0%         │  Not ordered yet              ║
 ║  Frontend README  │  ✅ Done       │  frontend/README.md created   ║
 ║  Root README      │  ✅ Done       │  README.md created 2026-02-23 ║
-║  E2E Tests        │  ✅ 8/8 pass   │  Playwright smoke (mocked API) ║
+║  E2E Mocked Tests │  ✅ 8/8 pass   │  Playwright smoke (mocked API) ║
+║  Live E2E Demo    │  🔄 In Progress│  WAVE 1 [FINAL] — ESP32+webcam║
+║  Interactive Demo │  ⏳ Timeout    │  30s limit exceeded (BUG-002) ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -262,9 +264,13 @@
 | 1.H.3 | Create super_admin account via admin script | ✅ | `POST /api/v1/admin/seed-super-admin` — username: super_admin |
 | 1.H.4 | End-to-end smoke test with real MQTT + PostgreSQL | ✅ | 12/12 API smoke tests passed (login, CRUD, auth, jobs) |
 | 1.H.5 | Test customer journey (create job → track → complete) | ✅ | 8/8 Playwright smoke tests pass (mocked API). BUG-001: staff assignment UI missing on JobDetailPage (API implemented). |
-| 1.H.6 | Test ESP32 → MQTT → Backend → WebSocket → Frontend | ⏳ | Needs real hardware + Mosquitto broker |
+| 1.H.6 | Test ESP32 → MQTT → Backend → WebSocket → Frontend | 🔄 | WAVE 1 [FINAL] live_demo_execution.spec.ts created — real ESP32 + webcam stream. BUG-002: interactive_demo.spec.ts exceeds 30s timeout (page.pause() indefinite wait). |
 | 1.H.7 | Demo to client (friend's workshop) | ❌ | Ready to demo — backend + frontend both running locally |
 | 1.H.8 | Gather feedback | ❌ | After demo |
+
+**Bugs Identified During E2E Live Demo:**
+- 🔄 BUG-001: Staff assignment UI missing on JobDetailPage (API implemented, frontend render gated behind role check — needs UI fix)
+- ⏳ BUG-002: `interactive_demo.spec.ts` in `frontend/tests/` times out at 30s — `page.pause()` call waits indefinitely; increase timeout or move to separate test file with `timeout: 0`
 
 ---
 
@@ -353,7 +359,7 @@
 | Database Design | `backend/docs/database/DATABASE_DESIGN.md` | ✅ Complete |
 | Firmware README | `firmware/README.md` | ✅ Complete |
 | Backend CHANGELOG | `backend/CHANGELOG.md` | ✅ Up to date |
-| Development Standards | `claude.md.md` | ✅ Complete |
+| Development Standards | `claude.md.md` | ❌ Deleted from repo (2026-02-24) — ATO protocol doc should live outside repo per §7 |
 | Root README | `/README.md` | ✅ Complete |
 | Frontend README | `frontend/README.md` | ✅ Complete |
 | Deployment Guide | `docs/DEPLOYMENT.md` | ❌ Missing |
@@ -467,38 +473,57 @@ PPF_Factory/
 │   │   └── config.h                ✅ (unique per device)
 │   └── README.md                   ✅
 │
-├── frontend/                       ❌ NOT CREATED YET
+├── frontend/                       ✅ COMPLETE (React 18 + Vite 5 + TS5 + Tailwind v3 + RTK2)
 │   ├── src/
-│   │   ├── pages/
-│   │   │   ├── LoginPage.tsx       ❌
-│   │   │   ├── DashboardPage.tsx   ❌
-│   │   │   ├── JobsPage.tsx        ❌
-│   │   │   ├── JobDetailPage.tsx   ❌
-│   │   │   ├── DevicesPage.tsx     ❌
-│   │   │   ├── AlertsPage.tsx      ❌
-│   │   │   ├── UsersPage.tsx       ❌
-│   │   │   └── TrackingPage.tsx    ❌ (public, no auth)
-│   │   ├── components/
-│   │   │   ├── PitTile.tsx         ❌ (sensor + status card)
-│   │   │   ├── SensorGauge.tsx     ❌
-│   │   │   ├── VideoPlayer.tsx     ❌ (Video.js WebRTC/HLS)
-│   │   │   ├── JobCard.tsx         ❌
-│   │   │   ├── AlertBell.tsx       ❌
-│   │   │   └── StatusBadge.tsx     ❌
+│   │   ├── pages/ (13 pages)
+│   │   │   ├── LoginPage.tsx           ✅
+│   │   │   ├── DashboardPage.tsx       ✅ (pit grid, 30s poll fallback)
+│   │   │   ├── JobsPage.tsx            ✅ (tabs + pagination)
+│   │   │   ├── JobDetailPage.tsx       ✅ (timeline + stepper)
+│   │   │   ├── DevicesPage.tsx         ✅ (online/offline badge)
+│   │   │   ├── AlertsPage.tsx          ✅
+│   │   │   ├── StaffPage.tsx           ✅ (user list + create + reset)
+│   │   │   ├── TrackingPage.tsx        ✅ (public, /track/:token)
+│   │   │   ├── AlertConfigPage.tsx     ✅ (threshold editor)
+│   │   │   ├── ChangePasswordPage.tsx  ✅ (forced for temp passwords)
+│   │   │   ├── AdminPage.tsx           ✅
+│   │   │   ├── PitDetailPage.tsx       ✅ (video stream + sensors)
+│   │   │   └── NotFoundPage.tsx        ✅
+│   │   ├── components/ (40+ components)
+│   │   │   ├── alerts/   AlertBell, AlertItem, AlertPanel, AlertSeverityBadge ✅
+│   │   │   ├── auth/     ProtectedRoute, RoleGuard ✅
+│   │   │   ├── devices/  DeviceCard, DeviceCommandModal, DeviceRegisterModal ✅
+│   │   │   ├── jobs/     JobCard, JobCreateModal, JobStatusBadge, JobTimeline ✅
+│   │   │   ├── layout/   AppLayout, Sidebar, Topbar ✅
+│   │   │   ├── sensors/  SensorCard, SensorHistoryChart ✅
+│   │   │   ├── ui/       Generic UI components ✅
+│   │   │   └── video/    Video.js WebRTC/HLS player ✅
 │   │   ├── store/
-│   │   │   ├── authSlice.ts        ❌
-│   │   │   ├── jobsSlice.ts        ❌
-│   │   │   ├── sensorsSlice.ts     ❌
-│   │   │   └── alertsSlice.ts      ❌
+│   │   │   ├── authSlice.ts        ✅
+│   │   │   ├── jobsSlice.ts        ✅
+│   │   │   ├── pitsSlice.ts        ✅
+│   │   │   ├── alertsSlice.ts      ✅
+│   │   │   └── devicesSlice.ts     ✅
+│   │   ├── api/ (11 modules)
+│   │   │   ├── client.ts           ✅ (Axios + JWT interceptor + 401 queue)
+│   │   │   ├── auth.ts, jobs.ts, pits.ts, sensors.ts ✅
+│   │   │   ├── devices.ts, workshops.ts, alerts.ts ✅
+│   │   │   ├── users.ts, streams.ts, tracking.ts ✅
 │   │   ├── services/
-│   │   │   ├── api.ts              ❌ (Axios client + interceptors)
-│   │   │   └── socket.ts           ❌ (Socket.IO connection)
-│   │   ├── hooks/
-│   │   │   ├── useWebSocket.ts     ❌
-│   │   │   └── useAuth.ts          ❌
-│   │   └── App.tsx                 ❌
-│   ├── package.json                ❌
-│   └── tailwind.config.js          ❌
+│   │   │   └── websocket.ts        ✅ (Native WS, exponential backoff, 25s ping)
+│   │   └── App.tsx                 ✅
+│   ├── e2e/
+│   │   ├── job-journey.spec.ts             ✅ (mocked)
+│   │   ├── integration-real.spec.ts        ✅
+│   │   ├── test_live_demo.spec.ts          ✅
+│   │   ├── test_live_demo_with_user.spec.ts ✅
+│   │   ├── test_complete_flow.spec.ts      ✅
+│   │   └── live_demo_execution.spec.ts     🔄 (WAVE 1 FINAL — real ESP32+webcam, modified)
+│   ├── tests/
+│   │   └── interactive_demo.spec.ts        ⏳ BUG-002: 30s timeout
+│   ├── playwright.config.ts                🔄 (modified — slowMo:500, headless:false)
+│   ├── package.json                        ✅
+│   └── tailwind.config.js                  ✅
 │
 ├── docker/
 │   ├── mosquitto/
@@ -515,7 +540,7 @@ PPF_Factory/
 │   └── HARDWARE_SETUP.md           ❌ (missing)
 │
 ├── docker-compose.yml              ✅
-├── claude.md.md                    ✅ Development standards
+├── claude.md.md                    ❌ DELETED 2026-02-24 (ATO protocol doc; lives outside repo per §7)
 └── README.md                       ✅ (created 2026-02-23)
 ```
 
@@ -523,35 +548,38 @@ PPF_Factory/
 
 ## NEXT IMMEDIATE ACTIONS (Priority Order)
 
-### 🔴 HIGH PRIORITY — Blocks Demo
+> **Status as of 2026-02-24:** Frontend + Backend COMPLETE. Live demo E2E in final stretch.
+
+### 🔴 HIGH PRIORITY — Blocks Live Demo Completion
 
 | Priority | Action | Owner | Est. Time |
 |----------|--------|-------|-----------|
-| 1 | Start React frontend — setup + auth pages | Dev | 3 days |
-| 2 | Owner dashboard (pit grid + job management) | Dev | 5 days |
-| 3 | Customer tracking portal (`/track/:token`) | Dev | 1 day |
-| 4 | WebSocket real-time integration | Dev | 2 days |
-| 5 | Video.js player with stream URL from API | Dev | 2 days |
+| 1 | Fix BUG-002: `interactive_demo.spec.ts` timeout — set `test.setTimeout(0)` or remove `page.pause()` from timed spec | Dev | 30 min |
+| 2 | Fix BUG-001: Staff assignment UI on JobDetailPage — wire frontend form to `PATCH /jobs/{id}/assign-staff` | Dev | 2 hours |
+| 3 | Commit modified `live_demo_execution.spec.ts` + `playwright.config.ts` | Dev | 5 min |
+| 4 | Run full `live_demo_execution.spec.ts` with real ESP32 + Mosquitto running | Dev | 1 hour |
+| 5 | Verify 1.H.6 gate: ESP32 → MQTT → Backend → WebSocket → Frontend full chain | Dev | 2 hours |
 
-### 🟡 MEDIUM PRIORITY — Needed for Go-Live
+### 🟡 MEDIUM PRIORITY — Demo to Client
 
 | Priority | Action | Owner | Est. Time |
 |----------|--------|-------|-----------|
-| 6 | Provision DigitalOcean server | Dev | 2 hours |
-| 7 | Run Docker stack + Alembic migrations | Dev | 1 hour |
-| 8 | Configure Nginx + SSL (Certbot) | Dev | 2 hours |
-| 9 | Order MVP hardware (1× ESP32 + BME680 + camera) | You | Purchase |
-| 10 | Flash firmware on test ESP32 | Dev | 1 hour |
+| 6 | Demo to client (friend's workshop) — 1.H.7 | You | 1 day |
+| 7 | Gather feedback — 1.H.8 | You | After demo |
+| 8 | Provision DigitalOcean server | Dev | 2 hours |
+| 9 | Run Docker stack + Alembic migrations on cloud | Dev | 1 hour |
+| 10 | Configure Nginx + SSL (Certbot) | Dev | 2 hours |
 
 ### 🟢 LOW PRIORITY — After Demo Feedback
 
 | Priority | Action | Owner | Est. Time |
 |----------|--------|-------|-----------|
-| 11 | Twilio SMS integration (alerts + job notifications) | Dev | 1 day |
-| 12 | Analytics dashboard (job duration graphs) | Dev | 2 days |
-| 13 | PDF report export | Dev | 1 day |
-| 14 | Payment gateway (Razorpay) | Dev | 3 days |
-| 15 | Mobile app / PWA | Dev | Phase 3 |
+| 11 | Order MVP hardware (1× ESP32 + BME680 + camera) | You | Purchase |
+| 12 | Twilio SMS integration (alerts + job notifications) | Dev | 1 day |
+| 13 | Analytics dashboard (job duration graphs) | Dev | 2 days |
+| 14 | PDF report export | Dev | 1 day |
+| 15 | Payment gateway (Razorpay) | Dev | 3 days |
+| 16 | Mobile app / PWA | Dev | Phase 3 |
 
 ---
 
@@ -563,7 +591,7 @@ PPF_Factory/
 |-----------|----------------|------|------------|
 | Backend (complete) | 80 hrs | ₹500/hr | ₹40,000 ✅ |
 | ESP32 Firmware (complete) | 30 hrs | ₹500/hr | ₹15,000 ✅ |
-| Frontend (pending) | 60 hrs | ₹500/hr | ₹30,000 ❌ |
+| Frontend (complete) | 60 hrs | ₹500/hr | ₹30,000 ✅ |
 | Testing + Documentation | 20 hrs | ₹500/hr | ₹10,000 🔄 |
 | **Total Dev Cost** | **190 hrs** | | **₹95,000** |
 
@@ -609,4 +637,4 @@ PPF_Factory/
 
 *Document maintained by: PPF Monitoring Team*
 *Format follows: claude.md.md development standards*
-*Next review: After frontend Phase 1-G is complete*
+*Next review: After live E2E demo (1.H.6) is verified green and BUG-001/002 closed*
