@@ -37,8 +37,8 @@
 ║  Frontend README  │  ✅ Done       │  frontend/README.md created   ║
 ║  Root README      │  ✅ Done       │  README.md created 2026-02-23 ║
 ║  E2E Mocked Tests │  ✅ 8/8 pass   │  Playwright smoke (mocked API) ║
-║  Live E2E Demo    │  🔄 In Progress│  WAVE 1 [FINAL] — ESP32+webcam║
-║  Interactive Demo │  ⏳ Timeout    │  30s limit exceeded (BUG-002) ║
+║  Live E2E Demo    │  🔄 In Progress│  WAVE 2 — BUG-001/002 fixed   ║
+║  Interactive Demo │  ✅ Fixed      │  test.setTimeout(0) (BUG-002) ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -268,9 +268,9 @@
 | 1.H.7 | Demo to client (friend's workshop) | ❌ | Ready to demo — backend + frontend both running locally |
 | 1.H.8 | Gather feedback | ❌ | After demo |
 
-**Bugs Identified During E2E Live Demo:**
-- 🔄 BUG-001: Staff assignment UI missing on JobDetailPage (API implemented, frontend render gated behind role check — needs UI fix)
-- ⏳ BUG-002: `interactive_demo.spec.ts` in `frontend/tests/` times out at 30s — `page.pause()` call waits indefinitely; increase timeout or move to separate test file with `timeout: 0`
+**Bugs Fixed (Wave 2 — 2026-02-24):**
+- ✅ BUG-001: Staff assignment UI added to JobDetailPage sidebar — checkbox multi-select, pre-populated, calls `PATCH /jobs/{id}/assign-staff`, RoleGuard: owner + super_admin
+- ✅ BUG-002: `interactive_demo.spec.ts` timeout fixed — `test.setTimeout(0)` applied; `page.pause()` now waits indefinitely as intended
 
 ---
 
@@ -554,10 +554,10 @@ PPF_Factory/
 
 | Priority | Action | Owner | Est. Time |
 |----------|--------|-------|-----------|
-| 1 | Fix BUG-002: `interactive_demo.spec.ts` timeout — set `test.setTimeout(0)` or remove `page.pause()` from timed spec | Dev | 30 min |
-| 2 | Fix BUG-001: Staff assignment UI on JobDetailPage — wire frontend form to `PATCH /jobs/{id}/assign-staff` | Dev | 2 hours |
-| 3 | Commit modified `live_demo_execution.spec.ts` + `playwright.config.ts` | Dev | 5 min |
-| 4 | Run full `live_demo_execution.spec.ts` with real ESP32 + Mosquitto running | Dev | 1 hour |
+| 1 | ~~Fix BUG-002: test.setTimeout(0)~~ | ✅ Done | WAVE 2 |
+| 2 | ~~Fix BUG-001: Staff assignment UI~~ | ✅ Done | WAVE 2 |
+| 3 | ~~Commit modified test files~~ | ✅ Done | WAVE 2 commit 0b9e73d |
+| 4 | Run `live_demo_execution.spec.ts` with real ESP32 + Mosquitto | Dev | 1 hour |
 | 5 | Verify 1.H.6 gate: ESP32 → MQTT → Backend → WebSocket → Frontend full chain | Dev | 2 hours |
 
 ### 🟡 MEDIUM PRIORITY — Demo to Client
