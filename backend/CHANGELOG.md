@@ -9,10 +9,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/)
 ## [Unreleased]
 
 ### Pending
-- Connect to live PostgreSQL + MQTT broker for end-to-end smoke tests
-- Run `alembic revision --autogenerate -m "initial"` then `alembic upgrade head`
 - Production deployment (DigitalOcean / VPS, SSL, domain)
-- Hardware procurement: ESP32 + BME680 sensor + IP camera for MVP pit
+- Phase 2: SMS/email notifications (Twilio, SendGrid)
+- Phase 2: BME680 IAQ sensor support upgrade
+- Phase 2: Multi-workshop admin dashboard
+
+---
+
+## [2026-02-24] — v0.4.0 — Phase 1 Complete (E2E Verified)
+
+### Added
+- **Full E2E Playwright test suite** (`frontend/e2e/full_visual_demo.spec.ts`) — 13-page visual walkthrough, slowMo:500, 23 screenshots captured to `screenshots/wave-2/`
+- **Live MQTT chain verification** (`frontend/e2e/live_demo_execution.spec.ts`) — ESP32 → Mosquitto → FastAPI → PostgreSQL → WebSocket → React confirmed end-to-end
+- **Interactive demo test** (`frontend/tests/interactive_demo.spec.ts`) — `test.setTimeout(0)` for unbounded `page.pause()` flow
+
+### Fixed
+- **BUG-001:** Staff Assignment UI missing on Job Detail page — added multi-select checkbox card with `RoleGuard(owner/super_admin)`, pre-populated from `assigned_staff_ids`, saves via `POST /jobs/{id}/assign-staff`
+- **BUG-002:** Playwright interactive demo timing out at 30s — resolved by adding `test.setTimeout(0)` before `page.pause()` call
+
+### Changed
+- **`frontend/playwright.config.ts`** — Switched from `testDir: './tests'` to `testMatch: ['tests/**/*.spec.ts', 'e2e/**/*.spec.ts']` to scan both test directories
+- **`firmware/include/config.h`** — Updated with live device credentials: `ESP32-083AF2A9F084` / `LIC-KTI6-Q10T-Y24C` / Workshop 33 / Pit 27
+- **`frontend/README.md`** — Complete rewrite: removed hardcoded credentials, corrected tech stack, added full 13-page route table, WebSocket events table, E2E section
+- **`README.md`** (root) — Updated badges, 13-page count, resolved known issues table, expanded testing section, Phase 1 Complete footer
+
+### Verified (2026-02-24)
+- Backend: **126/126 pytest tests passing**
+- Frontend mocked smoke tests: **8/8 passing**
+- Live MQTT chain: **✅** — 28–31°C / 58–70% from real ESP32 sensor pump
+- Full visual walkthrough: **13/13 pages ✅** — 23 screenshots captured
 
 ---
 

@@ -4,9 +4,9 @@
 > Real-time environmental monitoring · Job lifecycle tracking · Customer portal
 
 [![Backend Tests](https://img.shields.io/badge/backend%20tests-126%2F126%20✅-brightgreen)](#backend--key-api-endpoints)
-[![E2E Tests](https://img.shields.io/badge/playwright%20E2E-8%2F8%20✅-brightgreen)](#testing)
+[![E2E Tests](https://img.shields.io/badge/playwright%20E2E-live%20✅-brightgreen)](#testing)
 [![Firmware](https://img.shields.io/badge/firmware-ESP32%20v1.0.0%20✅-orange)](#3--flash-the-esp32-firmware)
-[![Phase](https://img.shields.io/badge/phase-1--H%20demo%20ready-yellow)](#project-status)
+[![Phase](https://img.shields.io/badge/phase-1%20complete%20✅-brightgreen)](#project-status)
 
 ---
 
@@ -78,12 +78,13 @@ PPF_Factory/
 │
 ├── frontend/                   React 18 SPA (TypeScript · Vite 5 · Tailwind CSS v3)
 │   ├── src/
-│   │   ├── pages/              12 pages (Dashboard, Jobs, Job Detail, Tracking …)
+│   │   ├── pages/              13 pages (Dashboard, Jobs, Job Detail, Tracking, Admin …)
 │   │   ├── components/         40+ reusable components
 │   │   ├── store/slices/       Redux Toolkit 2 (auth, jobs, pits, alerts, devices)
 │   │   ├── api/                Axios clients with JWT interceptor + 401 auto-refresh
 │   │   └── services/websocket.ts  Native WebSocket singleton (exponential back-off)
-│   ├── e2e/                    Playwright smoke tests (8/8 passing)
+│   ├── e2e/                    Playwright E2E tests (live demo + full visual walkthrough)
+│   ├── tests/                  Interactive demo tests (test.setTimeout(0))
 │   └── playwright.config.ts
 │
 ├── firmware/                   ESP32 PlatformIO project (Arduino framework)
@@ -219,17 +220,18 @@ Full spec: [`backend/docs/api/API_ENDPOINTS.md`](backend/docs/api/API_ENDPOINTS.
 | Page | Route | Roles | Description |
 |------|-------|-------|-------------|
 | Login | `/login` | All | JWT login form |
-| Dashboard | `/dashboard` | Owner/Admin | Pit grid with live sensor tiles (30s poll fallback) |
-| Jobs | `/jobs` | Owner/Staff | Job list with status tabs + Create Job modal |
-| Job Detail | `/jobs/:id` | Owner/Staff | Status pipeline · Copy Tracking Link · Vehicle info |
-| **Customer Tracking** | **`/track/:token`** | **None** | Public progress page — vehicle info + ETA |
-| Pit Detail | `/pits/:id` | Owner | Sensor history charts + live video stream |
-| Alerts | `/alerts` | All | Alert list + per-alert acknowledge + bulk clear |
-| Alert Config | `/alerts/config` | Owner | Custom threshold editor per sensor type |
-| Devices | `/devices` | Owner | ESP32 registration · online/offline status · MQTT commands |
-| Staff | `/staff` | Owner | User management + temporary password reset |
 | Change Password | `/change-password` | All | Forced for `is_temporary_password` accounts |
-| Admin | `/admin` | Super Admin | Paginated audit log + system metrics |
+| Dashboard | `/dashboard` | Owner/Admin | Pit grid with live sensor tiles (30s poll fallback) |
+| Pit Detail | `/pits/:id` | Owner | Live sensor °C/% · history charts · video stream |
+| Jobs | `/jobs` | Owner/Staff | Job list with status tabs + Create Job modal |
+| Job Detail | `/jobs/:id` | Owner/Staff | Status pipeline · **Assign Staff** · Tracking Link · Vehicle |
+| **Customer Tracking** | **`/track/:token`** | **None** | Public progress page — vehicle info + ETA countdown |
+| Alerts | `/alerts` | Owner/Staff | Alert list + per-alert acknowledge + bulk clear |
+| Alert Config | `/alerts/config` | Owner | Custom threshold editor per sensor type |
+| Devices | `/devices` | Owner | ESP32 registration · online/offline badge · MQTT commands |
+| Staff | `/staff` | Owner | User list + create + temporary password reset |
+| Admin | `/admin` | Super Admin | Workshop management · audit log · system metrics |
+| Not Found | `/*` | All | 404 page |
 
 ---
 
@@ -306,19 +308,17 @@ pytest --tb=short -q          # 126 tests — all pass
 ### Frontend — Playwright E2E
 ```bash
 cd frontend
-npx playwright test           # 8 smoke tests — all pass
-npx playwright test --headed  # Run with visible browser
+npx playwright test                                    # All tests (tests/ + e2e/)
+npx playwright test e2e/full_visual_demo.spec.ts       # Full 13-page visual walkthrough
+npx playwright test e2e/live_demo_execution.spec.ts    # Live ESP32 + webcam demo
+npx playwright test tests/interactive_demo.spec.ts     # Interactive pause demo (no timeout)
 ```
 
-Covered scenarios:
-1. Login page renders form fields
-2. Invalid credentials → error message shown
-3. Valid login → redirects to `/dashboard`
-4. Create Job modal → form fill + submit → job appears in list
-5. Job detail shows vehicle info + "Copy Tracking Link" button
-6. Copy Tracking Link → writes `/track/<token>` URL to clipboard
-7. Customer tracking page (`/track/:token`) renders vehicle + progress stepper
-8. Invalid token → "Job not found" screen
+**Mocked smoke tests (8/8 ✅):** Login, invalid creds, dashboard redirect, create job, job detail, tracking link copy, customer portal, invalid token.
+
+**Live E2E demo (✅ verified 2026-02-24):** Full MQTT chain — ESP32 → Mosquitto → Backend → DB → WebSocket → React UI. Temperature/humidity confirmed live at 28–31°C / 58–70%.
+
+**Full visual walkthrough (✅ 23 screenshots):** Every page walked through with `slowMo:500`. Screenshots saved to `frontend/screenshots/wave-2/`.
 
 ---
 
@@ -347,8 +347,8 @@ Covered scenarios:
 | 1-D Backend Tests | ✅ **126/126** | 100 % passing (Python 3.13 compatible) |
 | 1-E ESP32 Firmware | ✅ Complete | DHT22 + PMS5003 + BME680 + OTA stub |
 | 1-F Docker Stack | ✅ 95 % | Missing: SSL certs (production) |
-| 1-G Frontend | ✅ Complete | 12 pages · 40+ components · WebSocket |
-| 1-H E2E + Demo Prep | ✅ Complete | 8/8 Playwright smoke tests · README |
+| 1-G Frontend | ✅ Complete | 13 pages · 40+ components · WebSocket |
+| 1-H E2E + Demo Prep | ✅ Complete | Live E2E demo · full visual walkthrough · MQTT chain verified |
 | 2 · Production Deploy | ❌ Not started | DigitalOcean + SSL + hardware order |
 | 3 · Franchise Scale | ❌ Not started | Multi-tenant self-service onboarding |
 
@@ -356,9 +356,12 @@ Covered scenarios:
 
 ## Known Issues
 
-| ID | Component | Description | Impact |
-|----|-----------|-------------|--------|
-| BUG-001 | Frontend · Job Detail | Staff assignment UI missing on `/jobs/:id` page. The API endpoint (`PATCH /api/v1/jobs/:id/assign-staff`) is fully implemented — only the UI dropdown is absent. | Low — staff can be assigned via API |
+No open bugs. All Phase 1 issues resolved.
+
+| ID | Component | Description | Resolution |
+|----|-----------|-------------|------------|
+| ~~BUG-001~~ | Frontend · Job Detail | Staff assignment UI missing on `/jobs/:id` | ✅ Fixed 2026-02-24 — checkbox multi-select sidebar card added |
+| ~~BUG-002~~ | Playwright · Tests | `interactive_demo.spec.ts` timed out at 30s | ✅ Fixed 2026-02-24 — `test.setTimeout(0)` applied |
 
 ---
 
@@ -397,4 +400,4 @@ Covered scenarios:
 
 ---
 
-*PPF Monitoring Team · Phase 1-H · 2026-02-23*
+*PPF Monitoring Team · Phase 1 Complete ✅ · 2026-02-24*
