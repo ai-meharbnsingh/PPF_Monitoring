@@ -78,3 +78,5 @@ firmware/.pio/
 # ── Windows NUL device artifacts ─────────────────────────────
 nul
 firmware/nul
+camera_setup/node_modules/
+camera_setup/screenshots/

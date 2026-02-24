@@ -375,6 +375,8 @@ No open bugs. All Phase 1 issues resolved.
 | Frontend Guide | [`frontend/README.md`](frontend/README.md) | ✅ |
 | Deployment Guide | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | ✅ |
 | Hardware Setup | [`docs/HARDWARE_SETUP.md`](docs/HARDWARE_SETUP.md) | ✅ |
+| Camera Setup | [`docs/CAMERA_SETUP.md`](docs/CAMERA_SETUP.md) | ✅ |
+| **Next Steps / Resume Guide** | [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | ✅ |
 | Task Tracker | [`docs/PROJECT_TASKS.md`](docs/PROJECT_TASKS.md) | ✅ |
 | Backend Changelog | [`backend/CHANGELOG.md`](backend/CHANGELOG.md) | ✅ |
 
@@ -392,6 +394,13 @@ No open bugs. All Phase 1 issues resolved.
 | Router (VPN-capable) | Any OpenWRT-compatible | ₹2,000 |
 | Cabling + mounting | — | ₹650 |
 | **Total per pit** | | **₹16,250** |
+
+**On-site network devices (developer environment):**
+
+| Device | IP | Notes |
+|---|---|---|
+| Hikvision IP Camera (1080p) | `192.168.29.x` (DHCP) | Factory default: `192.168.1.64` — see [`docs/CAMERA_SETUP.md`](docs/CAMERA_SETUP.md) |
+| CP Plus DVR | `192.168.29.157` | Separate legacy DVR — not part of this project |
 
 **Unit economics:**
 - Hardware selling price: ₹12,000 → margin: ₹4,250/kit (55 %)

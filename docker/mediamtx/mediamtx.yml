@@ -75,17 +75,16 @@ paths:
   # Uncomment and configure when camera is connected.
   # Replace camera IP and credentials.
   #
-  # workshop_1_pit_1:
-  #   source: rtsp://admin:password@192.168.1.64:554/Streaming/Channels/102
-  #   sourceOnDemand: yes          # Only pull when a viewer requests it (saves bandwidth)
-  #   sourceOnDemandStartTimeout: 10s
-  #   sourceOnDemandCloseAfter: 60s
-  #
-  # workshop_1_pit_2:
-  #   source: rtsp://admin:password@192.168.1.65:554/Streaming/Channels/102
-  #   sourceOnDemand: yes
-  #   sourceOnDemandStartTimeout: 10s
-  #   sourceOnDemandCloseAfter: 60s
+  # ── Hikvision DS-2CD — PPF Workshop Pit 1 ─────────────────────────────────
+  # Camera IP: 192.168.29.64 | Credentials: admin / Hik@12345
+  # Sub-stream (102) used for WebRTC — lower latency than main stream (101)
+  # Docker containers on Windows Desktop use host.docker.internal to reach LAN
+  # host.docker.internal resolves to the Windows host, which can reach 192.168.29.64
+  workshop_1_pit_1:
+    source: rtsp://admin:Hik@12345@192.168.29.64:554/Streaming/Channels/102
+    sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 10s
+    sourceOnDemandCloseAfter: 60s
 
   # ── Health check path ─────────────────────────────────────────────────────
   # Can be used by monitoring to verify MediaMTX is alive

@@ -77,6 +77,9 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: ppf_mediamtx
     restart: unless-stopped
+    # network_mode: host would work on Linux; on Windows Desktop use extra_hosts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       MTX_LOGLEVEL: info
     volumes:
