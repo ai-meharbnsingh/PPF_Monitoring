@@ -1,0 +1,17 @@
+node_modules
+dist
+.env
+.env.local
+.env.production
+screenshots
+test-results
+playwright-report*
+e2e
+tests
+*.ts
+!src/**/*.ts
+!src/**/*.tsx
+!vite.config.ts
+!tailwind.config.ts
+!postcss.config.js
+!tsconfig*.json

@@ -77,8 +77,10 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = Field(default_factory=lambda: _yaml_config["server"]["cors_origins"])
 
     # ── Database (sensitive values from .env) ────────────────────────────────
-    DATABASE_USER: str
-    DATABASE_PASSWORD: str
+    # Railway / cloud providers set DATABASE_URL directly; local dev uses components
+    DATABASE_URL_OVERRIDE: Optional[str] = Field(default=None, alias="DATABASE_URL")
+    DATABASE_USER: str = ""
+    DATABASE_PASSWORD: str = ""
     DATABASE_HOST: str = _yaml_config["database"]["host"]
     DATABASE_PORT: int = _yaml_config["database"]["port"]
     DATABASE_NAME: str = _yaml_config["database"]["name"]
@@ -88,7 +90,19 @@ class Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        """Construct async database URL from components."""
+        """
+        Async database URL.
+        If DATABASE_URL env var is set (Railway), use it directly (with asyncpg driver).
+        Otherwise, construct from individual components.
+        """
+        if self.DATABASE_URL_OVERRIDE:
+            url = self.DATABASE_URL_OVERRIDE
+            # Railway gives postgresql:// — swap to asyncpg driver
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            return url
         return (
             f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
             f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
@@ -97,6 +111,15 @@ class Settings(BaseSettings):
     @property
     def SYNC_DATABASE_URL(self) -> str:
         """Synchronous DB URL for Alembic migrations."""
+        if self.DATABASE_URL_OVERRIDE:
+            url = self.DATABASE_URL_OVERRIDE
+            if url.startswith("postgresql+asyncpg://"):
+                url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+            elif url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            elif url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+            return url
         return (
             f"postgresql+psycopg2://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
             f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
@@ -121,6 +144,7 @@ class Settings(BaseSettings):
     MQTT_KEEPALIVE: int = _yaml_config["mqtt"]["keepalive"]
     MQTT_QOS: int = _yaml_config["mqtt"]["qos"]
     MQTT_RECONNECT_DELAY: int = _yaml_config["mqtt"]["reconnect_delay_seconds"]
+    MQTT_USE_TLS: bool = False
 
     # ── Video (MediaMTX) ─────────────────────────────────────────────────────
     MEDIAMTX_HOST: str = _yaml_config["video"]["mediamtx_host"]
@@ -201,6 +225,7 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = True
         extra = "ignore"
+        populate_by_name = True
 
 
 @lru_cache()
