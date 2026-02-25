@@ -20,9 +20,10 @@ const STEP_ORDER: Record<JobStatus, number> = {
 interface JobStatusFlowProps {
   status: JobStatus
   compact?: boolean
+  theme?: 'light' | 'dark'
 }
 
-export function JobStatusFlow({ status, compact = false }: JobStatusFlowProps) {
+export function JobStatusFlow({ status, compact = false, theme = 'light' }: JobStatusFlowProps) {
   if (status === 'cancelled') {
     return (
       <div className="flex items-center gap-2">
@@ -42,6 +43,17 @@ export function JobStatusFlow({ status, compact = false }: JobStatusFlowProps) {
         const isCurrent = idx === currentIndex
         const isPending = idx > currentIndex
 
+        const activeNodeBg = theme === 'dark' ? 'bg-electric-blue ring-4 ring-electric-blue/20' : 'bg-blue-600 ring-4 ring-blue-100'
+        const completedNodeBg = theme === 'dark' ? 'bg-emerald-500' : 'bg-green-500'
+        const pendingNodeBg = theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'
+
+        const activeText = theme === 'dark' ? 'text-electric-blue' : 'text-blue-700'
+        const completedText = theme === 'dark' ? 'text-emerald-400' : 'text-green-600'
+        const pendingText = theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+
+        const activeLineBg = theme === 'dark' ? 'bg-emerald-500' : 'bg-green-400'
+        const pendingLineBg = theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'
+
         return (
           <div key={step.status} className="flex items-center">
             {/* Step node */}
@@ -50,19 +62,20 @@ export function JobStatusFlow({ status, compact = false }: JobStatusFlowProps) {
                 className={clsx(
                   'rounded-full flex items-center justify-center transition-colors',
                   compact ? 'w-6 h-6' : 'w-8 h-8',
-                  isCompleted && 'bg-green-500',
-                  isCurrent && 'bg-blue-600 ring-4 ring-blue-100',
-                  isPending && 'bg-gray-200',
+                  isCompleted && completedNodeBg,
+                  isCurrent && activeNodeBg,
+                  isPending && pendingNodeBg,
                 )}
               >
                 {isCompleted ? (
-                  <Check className={clsx('text-white', compact ? 'h-3 w-3' : 'h-4 w-4')} />
+                  <Check className={clsx(theme === 'dark' ? 'text-matte-black' : 'text-white', compact ? 'h-3 w-3' : 'h-4 w-4')} />
                 ) : (
                   <span
                     className={clsx(
                       'font-semibold',
                       compact ? 'text-[10px]' : 'text-xs',
-                      isCurrent ? 'text-white' : 'text-gray-400',
+                      isCurrent && (theme === 'dark' ? 'text-black' : 'text-white'),
+                      !isCurrent && (theme === 'dark' ? 'text-gray-500' : 'text-gray-400'),
                     )}
                   >
                     {idx + 1}
@@ -72,8 +85,8 @@ export function JobStatusFlow({ status, compact = false }: JobStatusFlowProps) {
               {!compact && (
                 <span
                   className={clsx(
-                    'text-[10px] mt-1 font-medium text-center',
-                    isCurrent ? 'text-blue-700' : isCompleted ? 'text-green-600' : 'text-gray-400',
+                    'text-[10px] mt-2 font-medium text-center uppercase tracking-wider',
+                    isCurrent ? activeText : isCompleted ? completedText : pendingText,
                   )}
                 >
                   {step.label}
@@ -87,7 +100,8 @@ export function JobStatusFlow({ status, compact = false }: JobStatusFlowProps) {
                 className={clsx(
                   'h-0.5 transition-colors',
                   compact ? 'w-4' : 'w-8',
-                  idx < currentIndex ? 'bg-green-400' : 'bg-gray-200',
+                  idx < currentIndex ? activeLineBg : pendingLineBg,
+                  { 'mt-[-16px]': !compact } // visually offset line to align with node, not text
                 )}
               />
             )}

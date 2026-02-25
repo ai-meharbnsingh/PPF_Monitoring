@@ -85,7 +85,7 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
             : 'No data'}
         </span>
         <Link
-          to={`/pits/${pit.id}`}
+          to={`/admin/pits/${pit.id}`}
           className="flex items-center gap-1 text-xs text-electric-blue hover:text-white font-medium transition-colors"
         >
           Details

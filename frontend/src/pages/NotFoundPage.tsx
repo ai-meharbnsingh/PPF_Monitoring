@@ -8,7 +8,7 @@ export default function NotFoundPage() {
       <p className="text-8xl font-bold text-gray-200">404</p>
       <h1 className="text-2xl font-semibold text-gray-800 mt-4">Page not found</h1>
       <p className="text-gray-500 mt-2 mb-8">The page you're looking for doesn't exist.</p>
-      <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+      <Button onClick={() => navigate('/admin/dashboard')}>Go to Dashboard</Button>
     </div>
   )
 }
