@@ -202,6 +202,19 @@ class Settings(BaseSettings):
             )
         return v
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from JSON string (env var) or list (YAML)."""
+        import json
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If it's a plain string, wrap in list
+                return [v]
+        return v
+
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT == "production"
