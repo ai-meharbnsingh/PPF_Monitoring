@@ -53,9 +53,18 @@ export function useAuth() {
     dispatch(clearAuth())
   }, [dispatch])
 
-  const markPasswordChanged = useCallback(() => {
+  const markPasswordChanged = useCallback(async () => {
     dispatch(clearTemporaryFlag())
-  }, [dispatch])
+    // Re-fetch profile from backend so ProtectedRoute sees updated flag
+    try {
+      const profile = await authApi.getMe()
+      if (token) {
+        dispatch(setCredentials({ token, user: profile }))
+      }
+    } catch {
+      // Local flag clear is sufficient as fallback
+    }
+  }, [dispatch, token])
 
   return {
     user,

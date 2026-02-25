@@ -52,6 +52,7 @@ def _pit_response(pit: Pit) -> dict:
         "description": pit.description,
         "status": pit.status,
         "camera_ip": pit.camera_ip,
+        "camera_rtsp_url": pit.camera_rtsp_url,
         "camera_model": pit.camera_model,
         "camera_is_online": pit.camera_is_online,
         "camera_last_seen": pit.camera_last_seen,

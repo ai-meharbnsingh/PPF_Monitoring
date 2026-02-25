@@ -107,7 +107,7 @@ services:
       # Override host names to use Docker service names
       DATABASE_HOST: postgres
       MQTT_BROKER_HOST: mosquitto
-      MEDIAMTX_HOST: mediamtx
+      MEDIAMTX_HOST: localhost
     volumes:
       - ./backend:/app               # Hot-reload in development
       - backend_logs:/app/logs
@@ -125,7 +125,7 @@ services:
         --reload
         --reload-dir src
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

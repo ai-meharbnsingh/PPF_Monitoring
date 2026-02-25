@@ -25,6 +25,8 @@ export default function DevicesPage() {
       const resp = await devicesApi.list(workshopId)
       dispatch(setDevices(resp.items))
     } catch {
+      // silently handle — auth interceptor handles 401
+    } finally {
       dispatch(setDevicesLoading(false))
     }
   }, [workshopId, dispatch])

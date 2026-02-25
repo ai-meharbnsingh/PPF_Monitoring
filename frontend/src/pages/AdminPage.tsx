@@ -3,6 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { workshopsApi, CreateWorkshopPayload } from '@/api/workshops'
+import { pitsApi, CreatePitPayload } from '@/api/pits'
 import { Workshop } from '@/types/common'
 import { toast } from 'react-hot-toast'
 
@@ -13,6 +14,14 @@ export default function AdminPage() {
         slug: '',
         contact_email: '',
         contact_phone: ''
+    })
+    const [pitForm, setPitForm] = useState<CreatePitPayload & { workshop_id: string }>({
+        workshop_id: '',
+        pit_number: 1,
+        name: '',
+        description: '',
+        camera_ip: '',
+        camera_rtsp_url: '',
     })
 
     // Fetch workshops
@@ -34,6 +43,19 @@ export default function AdminPage() {
         }
     })
 
+    // Create pit mutation
+    const createPitMutation = useMutation({
+        mutationFn: ({ workshopId, payload }: { workshopId: number; payload: CreatePitPayload }) =>
+            pitsApi.createPit(workshopId, payload),
+        onSuccess: () => {
+            toast.success('Pit created successfully!')
+            setPitForm({ workshop_id: '', pit_number: 1, name: '', description: '', camera_ip: '', camera_rtsp_url: '' })
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.detail?.[0]?.msg || error?.response?.data?.detail || 'Failed to create pit')
+        }
+    })
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.name || !formData.slug) {
@@ -41,6 +63,17 @@ export default function AdminPage() {
             return
         }
         createMutation.mutate(formData)
+    }
+
+    const handlePitSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        const wsId = parseInt(pitForm.workshop_id)
+        if (!wsId || !pitForm.pit_number) {
+            toast.error('Workshop ID and Pit Number are required')
+            return
+        }
+        const { workshop_id, ...payload } = pitForm
+        createPitMutation.mutate({ workshopId: wsId, payload })
     }
 
     return (
@@ -131,6 +164,95 @@ export default function AdminPage() {
                                 className="w-full bg-electric-blue text-black font-semibold py-2 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors mt-2"
                             >
                                 {createMutation.isPending ? 'Creating...' : 'Create Workshop'}
+                            </button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Create Pit Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="bg-matte-black border-white/[0.08]">
+                    <CardHeader>
+                        <CardTitle className="text-lg text-white">Create New Pit</CardTitle>
+                        <CardDescription>Add a pit/bay to an existing workshop.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handlePitSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Workshop ID *</label>
+                                    <select
+                                        value={pitForm.workshop_id}
+                                        onChange={(e) => setPitForm({ ...pitForm, workshop_id: e.target.value })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+                                    >
+                                        <option value="">Select Workshop</option>
+                                        {workshops?.map((ws: Workshop) => (
+                                            <option key={ws.id} value={ws.id}>{ws.name} (ID: {ws.id})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Pit Number *</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={50}
+                                        value={pitForm.pit_number}
+                                        onChange={(e) => setPitForm({ ...pitForm, pit_number: parseInt(e.target.value) || 1 })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Pit Name</label>
+                                <input
+                                    type="text"
+                                    value={pitForm.name}
+                                    onChange={(e) => setPitForm({ ...pitForm, name: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+                                    placeholder="e.g. Bay 1 - Main Pit"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                                <input
+                                    type="text"
+                                    value={pitForm.description}
+                                    onChange={(e) => setPitForm({ ...pitForm, description: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+                                    placeholder="e.g. PPF application bay with camera"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Camera IP</label>
+                                    <input
+                                        type="text"
+                                        value={pitForm.camera_ip}
+                                        onChange={(e) => setPitForm({ ...pitForm, camera_ip: e.target.value })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
+                                        placeholder="e.g. 192.168.29.64"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">RTSP URL</label>
+                                    <input
+                                        type="text"
+                                        value={pitForm.camera_rtsp_url}
+                                        onChange={(e) => setPitForm({ ...pitForm, camera_rtsp_url: e.target.value })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
+                                        placeholder="rtsp://..."
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={createPitMutation.isPending}
+                                className="w-full bg-electric-blue text-black font-semibold py-2 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors mt-2"
+                            >
+                                {createPitMutation.isPending ? 'Creating...' : 'Create Pit'}
                             </button>
                         </form>
                     </CardContent>

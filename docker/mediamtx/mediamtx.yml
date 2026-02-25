@@ -86,6 +86,13 @@ paths:
     sourceOnDemandStartTimeout: 10s
     sourceOnDemandCloseAfter: 60s
 
+  # ── PP Monitoring Workshop (ID=15), Main Pit (pit_number=1) ─────────────
+  workshop_15_pit_1:
+    source: rtsp://admin:Hik@12345@192.168.29.64:554/Streaming/Channels/102
+    sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 10s
+    sourceOnDemandCloseAfter: 60s
+
   # ── Health check path ─────────────────────────────────────────────────────
   # Can be used by monitoring to verify MediaMTX is alive
   health:

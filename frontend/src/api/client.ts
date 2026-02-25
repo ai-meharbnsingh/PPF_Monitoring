@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { LS_TOKEN_KEY } from '@/utils/constants'
+import { store } from '@/store'
+import { clearAuth } from '@/store/slices/authSlice'
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
@@ -69,10 +71,8 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`
         return apiClient(original)
       } catch {
-        // Refresh failed — clear auth and redirect to login
-        localStorage.removeItem(LS_TOKEN_KEY)
-        localStorage.removeItem('ppf_user')
-        window.location.href = '/login'
+        // Refresh failed — clear auth via Redux (ProtectedRoute handles redirect)
+        store.dispatch(clearAuth())
         return Promise.reject(error)
       } finally {
         isRefreshing = false

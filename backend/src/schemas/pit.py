@@ -39,6 +39,7 @@ class PitUpdate(BaseModel):
     camera_rtsp_url: Optional[str] = Field(None, max_length=1000)
     camera_model: Optional[str] = Field(None, max_length=100)
     camera_username: Optional[str] = Field(None, max_length=50)
+    camera_is_online: Optional[bool] = None
 
 
 # ─── Embedded sub-schemas ─────────────────────────────────────────────────────

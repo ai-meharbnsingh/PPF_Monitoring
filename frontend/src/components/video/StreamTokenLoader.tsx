@@ -1,6 +1,7 @@
-import { clsx } from 'clsx'
-import Webcam from 'react-webcam'
+import { useEffect, useState } from 'react'
 import { VideoPlayer } from './VideoPlayer'
+import { streamsApi } from '@/api/streams'
+import type { StreamTokenResponse } from '@/types'
 
 interface StreamTokenLoaderProps {
   pitId: number
@@ -17,30 +18,36 @@ export function StreamTokenLoader({
   cameraLastSeen,
   className,
 }: StreamTokenLoaderProps) {
+  const [webrtcUrl, setWebrtcUrl] = useState('')
+  const [hlsUrl, setHlsUrl] = useState('')
 
-  if (!cameraIsOnline) {
-    return (
-      <VideoPlayer
-        webrtcUrl=""
-        hlsUrl=""
-        pitName={pitName}
-        isOnline={false}
-        cameraLastSeen={cameraLastSeen}
-        className={className}
-      />
-    )
-  }
+  useEffect(() => {
+    if (!cameraIsOnline) return
 
-  // Demo override: Use react-webcam instead of actual Stream logic
+    let cancelled = false
+    const fetchToken = async () => {
+      try {
+        const result: StreamTokenResponse = await streamsApi.getStreamToken(pitId)
+        if (!cancelled) {
+          setWebrtcUrl(result.webrtc_url ?? '')
+          setHlsUrl(result.hls_url ?? '')
+        }
+      } catch {
+        // Stream token fetch failed — VideoPlayer will show offline
+      }
+    }
+    void fetchToken()
+    return () => { cancelled = true }
+  }, [pitId, cameraIsOnline])
+
   return (
-    <div className={clsx('relative w-full h-full bg-black flex items-center justify-center overflow-hidden', className)}>
-      <Webcam
-        audio={false}
-        className="object-cover w-full h-full opacity-90"
-        videoConstraints={{
-          facingMode: "environment"
-        }}
-      />
-    </div>
+    <VideoPlayer
+      webrtcUrl={webrtcUrl}
+      hlsUrl={hlsUrl}
+      pitName={pitName}
+      isOnline={cameraIsOnline}
+      cameraLastSeen={cameraLastSeen}
+      className={className}
+    />
   )
 }

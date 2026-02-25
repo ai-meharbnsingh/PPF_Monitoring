@@ -25,6 +25,28 @@ import {
 
 const VIDEO_ROLES = ['owner', 'super_admin', 'staff'] as const
 
+function CameraTimestamp({ pitNumber, pitName }: { pitNumber: number; pitName: string }) {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  return (
+    <div className="absolute bottom-4 left-4 z-20 pointer-events-none space-y-0.5">
+      <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">
+        CAM_{String(pitNumber).padStart(2, '0')}_BAY · {pitName.toUpperCase()}
+      </p>
+      <p className="text-[9px] font-mono text-gray-500 uppercase">
+        {dateStr} {'  '} {timeStr}
+        {'  '}
+        <span className="text-red-400 font-bold">● LIVE</span>
+      </p>
+    </div>
+  )
+}
+
 export default function PitDetailPage() {
   const { pitId } = useParams<{ pitId: string }>()
   const navigate = useNavigate()
@@ -277,23 +299,7 @@ export default function PitDetailPage() {
               </div>
 
               {/* ── Camera label — bottom left ── */}
-              <div className="absolute bottom-4 left-4 z-20 pointer-events-none space-y-0.5">
-                <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">
-                  CAM_{String(pit.pit_number).padStart(2, '0')}_BAY ·{' '}
-                  {pit.name.toUpperCase()}
-                </p>
-                <p className="text-[9px] font-mono text-gray-500 uppercase">
-                  {new Date()
-                    .toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                    .toUpperCase()}
-                  {'  '}
-                  <span className="text-red-400 font-bold">● REC</span>
-                </p>
-              </div>
+              <CameraTimestamp pitNumber={pit.pit_number} pitName={pit.name} />
             </div>
 
             {/* ── Camera status strip ── */}

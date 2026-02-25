@@ -80,3 +80,8 @@ nul
 firmware/nul
 camera_setup/node_modules/
 camera_setup/screenshots/
+
+# ── Rishab's repo (separate project) ─────────────────────────
+rishab/
+rg-auto-studio-main.zip
+config.json

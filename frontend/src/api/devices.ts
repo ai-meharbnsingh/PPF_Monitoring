@@ -26,8 +26,8 @@ export const devicesApi = {
     data: DeviceRegisterRequest,
   ): Promise<DeviceRegisterResponse> => {
     const resp = await apiClient.post<{ success: true; data: DeviceRegisterResponse }>(
-      `/devices`,
-      { ...data, workshop_id: workshopId },
+      `/workshops/${workshopId}/devices`,
+      data,
     )
     return resp.data.data
   },

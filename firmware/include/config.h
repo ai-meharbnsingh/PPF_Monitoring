@@ -33,10 +33,10 @@
 // After registering the device via POST /api/v1/workshops/{id}/devices,
 // copy the device_id and license_key here.
 
-#define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84 — Device ID: 24
-#define LICENSE_KEY     "LIC-KTI6-Q10T-Y24C"    // Registered 2026-02-23 — Workshop 33 / Pit 27
-#define WORKSHOP_ID     33                       // "Visual Demo WS" (id=33)
-#define PIT_ID          27                       // "Demo Pit Alpha" (id=27)
+#define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84
+#define LICENSE_KEY     "LIC-1RL0-5S1U-KHNA"    // Registered license key
+#define WORKSHOP_ID     15                       // PP Monitoring Workshop
+#define PIT_ID          10                       // Main Pit
 #define FIRMWARE_VER    "1.0.0"
 
 
@@ -44,8 +44,8 @@
 // These are the FALLBACK credentials used when no credentials are saved in NVS.
 // On first boot (or after wm.resetSettings()), the device opens a captive portal
 // instead — connect to the AP below and enter your WiFi password via browser.
-#define WIFI_SSID       "LAPTOP-U2GTVCR8 5179"  // Windows Mobile Hotspot — reference only
-#define WIFI_PASSWORD   "6w0)177M"               // Reference only (stored in NVS by portal)
+#define WIFI_SSID       "Jas_Mehar"              // 2.4GHz WiFi (ESP32 only supports 2.4GHz)
+#define WIFI_PASSWORD   "airtel2730"             // WiFi password
 #define WIFI_TIMEOUT_MS 15000                    // 15 seconds connect attempt before portal
 
 // ─── CAPTIVE PORTAL (WiFiManager) ─────────────────────────────────────────────
@@ -61,8 +61,8 @@
 
 
 // ─── MQTT BROKER ──────────────────────────────────────────────────────────────
-#define MQTT_BROKER_HOST    "192.168.137.1"      // Windows Mobile Hotspot IP (fixed — always this on hotspot adapter)
-#define MQTT_BROKER_PORT    1883
+#define MQTT_BROKER_HOST    "192.168.29.16"      // Mac on Jas_Mehar WiFi
+#define MQTT_BROKER_PORT    1884                 // socat forwards 1884 → Docker Mosquitto 1883
 #define MQTT_USERNAME       "ppf_backend"         // Must match backend .env MQTT_USERNAME
 #define MQTT_PASSWORD       "BsW0mmVr5CoDAzW21ibADB7t-kM" // Must match backend .env MQTT_PASSWORD
 #define MQTT_KEEPALIVE_SEC  60
