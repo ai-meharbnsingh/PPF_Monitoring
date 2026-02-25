@@ -240,21 +240,24 @@ export default function PublicSplashPage() {
                             </div>
                         </div>
 
-                        {/* Video placeholder */}
-                        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-video flex items-center justify-center group cursor-pointer"
+                        {/* Video */}
+                        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-video group cursor-pointer"
                              onClick={() => setShowTokenModal(true)}
                         >
                             <video
-                                className="absolute inset-0 w-full h-full object-cover opacity-40"
+                                className="w-full h-full object-cover"
                                 autoPlay muted loop playsInline
                             >
-                                <source src="/videos/ppf-comparison.mp4" type="video/mp4" />
+                                <source src="/videos/live-bay-preview.mp4" type="video/mp4" />
                             </video>
-                            <div className="relative z-10 flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-white/20 transition-colors">
-                                    <Eye className="w-7 h-7 text-white" />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm">
+                                        <Eye className="w-7 h-7 text-white" />
+                                    </div>
+                                    <span className="text-white text-sm font-medium tracking-wider uppercase">Enter Live Bay</span>
                                 </div>
-                                <span className="text-gray-400 text-sm font-medium tracking-wider uppercase">Live Bay Preview</span>
                             </div>
                         </div>
                     </div>

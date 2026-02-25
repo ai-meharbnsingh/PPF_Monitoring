@@ -15,7 +15,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (

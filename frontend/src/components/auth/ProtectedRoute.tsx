@@ -15,9 +15,9 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
 
   if (isLoading) return <PageSpinner />
 
-  // Not authenticated → redirect to login
+  // Not authenticated → redirect to home
   if (!isAuthenticated || !user) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
+    return <Navigate to="/" replace />
   }
 
   // Force password change if temp password, except if already going there

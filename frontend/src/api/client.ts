@@ -69,10 +69,10 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`
         return apiClient(original)
       } catch {
-        // Refresh failed — clear auth and redirect to login
+        // Refresh failed — clear auth and redirect to home
         localStorage.removeItem(LS_TOKEN_KEY)
         localStorage.removeItem('ppf_user')
-        window.location.href = '/login'
+        window.location.href = '/'
         return Promise.reject(error)
       } finally {
         isRefreshing = false
