@@ -21,37 +21,37 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    to: '/',
+    to: '/admin/dashboard',
     label: 'Dashboard',
     icon: <LayoutDashboard className="h-5 w-5" />,
     roles: ['super_admin', 'owner', 'staff'],
   },
   {
-    to: '/jobs',
+    to: '/admin/jobs',
     label: 'Jobs',
     icon: <Briefcase className="h-5 w-5" />,
     roles: ['super_admin', 'owner', 'staff'],
   },
   {
-    to: '/alerts',
+    to: '/admin/alerts',
     label: 'Alerts',
     icon: <Bell className="h-5 w-5" />,
     roles: ['super_admin', 'owner', 'staff'],
   },
   {
-    to: '/devices',
+    to: '/admin/devices',
     label: 'Devices',
     icon: <Cpu className="h-5 w-5" />,
     roles: ['super_admin', 'owner'],
   },
   {
-    to: '/staff',
+    to: '/admin/staff',
     label: 'Staff',
     icon: <Users className="h-5 w-5" />,
     roles: ['super_admin', 'owner'],
   },
   {
-    to: '/admin',
+    to: '/admin/metrics',
     label: 'Admin',
     icon: <ShieldCheck className="h-5 w-5" />,
     roles: ['super_admin'],
@@ -128,7 +128,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/admin/dashboard'}
               onClick={() => {
                 if (window.innerWidth < 1024) onClose()
               }}

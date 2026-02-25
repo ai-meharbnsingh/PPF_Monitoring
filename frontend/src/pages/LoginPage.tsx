@@ -14,7 +14,7 @@ interface LoginFormValues {
 export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const redirect = searchParams.get('redirect') ?? '/dashboard'
+  const redirect = searchParams.get('redirect') ?? '/admin/dashboard'
   const { login, isLoading, error, isAuthenticated, user } = useAuth()
 
   const {

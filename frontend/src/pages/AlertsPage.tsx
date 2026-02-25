@@ -64,7 +64,7 @@ export default function AlertsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Alerts</h1>
         <RoleGuard roles={['owner', 'super_admin']}>
-          <Link to="/alerts/config">
+          <Link to="/admin/alerts/config">
             <Button variant="secondary" size="sm" leftIcon={<Settings className="h-4 w-4" />}>
               Configure
             </Button>

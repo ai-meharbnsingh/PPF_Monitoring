@@ -8,6 +8,7 @@ import { lazy, Suspense } from 'react'
 import { PageSpinner } from '@/components/ui/Spinner'
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
+const PublicSplashPage = lazy(() => import('@/pages/PublicSplashPage'))
 const ChangePasswordPage = lazy(() => import('@/pages/ChangePasswordPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const PitDetailPage = lazy(() => import('@/pages/PitDetailPage'))
@@ -27,6 +28,10 @@ function Lazy({ element }: { element: React.ReactNode }) {
 
 const router = createBrowserRouter([
   // ── Public routes ────────────────────────────────────────────────────────
+  {
+    path: '/',
+    element: <Lazy element={<PublicSplashPage />} />,
+  },
   {
     path: '/login',
     element: <Lazy element={<LoginPage />} />,
@@ -48,31 +53,32 @@ const router = createBrowserRouter([
 
   // ── Main app (requires auth, renders AppLayout shell) ─────────────────
   {
+    path: '/admin',
     element: (
       <ProtectedRoute>
         <AppLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { index: true, element: <Navigate to="/admin/dashboard" replace /> },
       {
-        path: '/dashboard',
+        path: 'dashboard',
         element: <Lazy element={<DashboardPage />} />,
       },
       {
-        path: '/pits/:pitId',
+        path: 'pits/:pitId',
         element: <Lazy element={<PitDetailPage />} />,
       },
       {
-        path: '/jobs',
+        path: 'jobs',
         element: <Lazy element={<JobsPage />} />,
       },
       {
-        path: '/jobs/:jobId',
+        path: 'jobs/:jobId',
         element: <Lazy element={<JobDetailPage />} />,
       },
       {
-        path: '/alerts',
+        path: 'alerts',
         element: <Lazy element={<AlertsPage />} />,
       },
 
@@ -85,19 +91,19 @@ const router = createBrowserRouter([
         ),
         children: [
           {
-            path: '/alerts/config',
+            path: 'alerts/config',
             element: <Lazy element={<AlertConfigPage />} />,
           },
           {
-            path: '/devices',
+            path: 'devices',
             element: <Lazy element={<DevicesPage />} />,
           },
           {
-            path: '/staff',
+            path: 'staff',
             element: <Lazy element={<StaffPage />} />,
           },
           {
-            path: '/admin',
+            path: 'metrics',
             element: <Lazy element={<AdminPage />} />,
           },
         ],

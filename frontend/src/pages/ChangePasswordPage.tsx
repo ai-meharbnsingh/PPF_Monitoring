@@ -37,7 +37,7 @@ export default function ChangePasswordPage() {
       })
       markPasswordChanged()
       toast.success('Password changed successfully!')
-      navigate('/dashboard', { replace: true })
+      navigate('/admin/dashboard', { replace: true })
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(typeof detail === 'string' ? detail : 'Failed to change password.')
