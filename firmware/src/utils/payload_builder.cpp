@@ -137,6 +137,56 @@ bool PayloadBuilder::buildBME680(const BME680Reading& bme,
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BME688 primary + DHT11 fallback payload
+// ─────────────────────────────────────────────────────────────────────────────
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+
+bool PayloadBuilder::buildBME688WithFallback(const BME680Reading& bme,
+                                              const DHT22Reading&  dht,
+                                              bool                 bmeFailed,
+                                              const char*          timestamp,
+                                              char*                buf,
+                                              size_t               len)
+{
+    StaticJsonDocument<320> doc;
+
+    doc["device_id"]   = DEVICE_ID;
+    doc["license_key"] = LICENSE_KEY;
+    doc["sensor_type"] = "BME688";
+
+    if (!bmeFailed) {
+        // BME688 primary data — full readings
+        doc["temperature"]    = serialized(String(bme.temperature,    1));
+        doc["humidity"]       = serialized(String(bme.humidity,       1));
+        doc["pressure"]       = serialized(String(bme.pressure,       1));
+        doc["gas_resistance"] = serialized(String(bme.gas_resistance, 0));
+        doc["iaq"]            = serialized(String(bme.iaq,            1));
+        doc["iaq_accuracy"]   = bme.iaq_accuracy;
+        doc["fallback_active"] = false;
+    } else {
+        // DHT11 fallback — temp+humidity only
+        doc["temperature"]     = serialized(String(dht.temperature, 1));
+        doc["humidity"]        = serialized(String(dht.humidity,    1));
+        doc["fallback_active"] = true;
+    }
+
+    doc["timestamp"] = timestamp;
+
+    size_t written = serializeJson(doc, buf, len);
+    if (written == 0 || written >= len) {
+        DEBUG_PRINTLN("[PAYLOAD] ERROR — BME688 serialization failed");
+        return false;
+    }
+
+    DEBUG_PRINTF("[PAYLOAD] BME688 JSON (%d bytes, fallback=%s): %s\n",
+                 written, bmeFailed ? "YES" : "NO", buf);
+    return true;
+}
+
+#endif  // SENSOR_CONFIG_BME688_DHT_FALLBACK
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Status heartbeat payload
 // ─────────────────────────────────────────────────────────────────────────────
 bool PayloadBuilder::buildStatus(const char* ipAddress,

@@ -11,10 +11,10 @@ Created: 2026-02-21
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.alert import Alert, AlertConfig
@@ -194,6 +194,7 @@ async def evaluate_alerts(
         List of Alert objects created (empty if no violations)
     """
     triggered_alerts = []
+    COOLDOWN_MINUTES = 5
 
     try:
         # Fetch workshop alert config (or use defaults)
@@ -224,99 +225,103 @@ async def evaluate_alerts(
                     if reading.temperature < temp_min
                     else AlertType.TEMP_TOO_HIGH
                 )
-                threshold = temp_min if reading.temperature < temp_min else temp_max
-                alert = _create_alert(
-                    workshop_id=workshop_id,
-                    pit_id=pit_id,
-                    device_id=reading.device_id,
-                    alert_type=alert_type,
-                    severity=AlertSeverity.WARNING,
-                    message=(
-                        f"Temperature {reading.temperature:.1f}°C is outside safe range "
-                        f"({temp_min}°C — {temp_max}°C)"
-                    ),
-                    trigger_value=reading.temperature,
-                    threshold_value=threshold,
-                    now=now,
-                )
-                db.add(alert)
-                triggered_alerts.append(alert)
+                if not await _alert_on_cooldown(db, reading.device_id, pit_id, alert_type, COOLDOWN_MINUTES):
+                    threshold = temp_min if reading.temperature < temp_min else temp_max
+                    alert = _create_alert(
+                        workshop_id=workshop_id,
+                        pit_id=pit_id,
+                        device_id=reading.device_id,
+                        alert_type=alert_type,
+                        severity=AlertSeverity.WARNING,
+                        message=(
+                            f"Temperature {reading.temperature:.1f}°C is outside safe range "
+                            f"({temp_min}°C — {temp_max}°C)"
+                        ),
+                        trigger_value=reading.temperature,
+                        threshold_value=threshold,
+                        now=now,
+                    )
+                    db.add(alert)
+                    triggered_alerts.append(alert)
 
         # ── Humidity ───────────────────────────────────────────────────────
         if reading.humidity is not None:
             hum_status = evaluate_humidity_status(reading.humidity, humidity_max)
             if hum_status == SensorStatus.WARNING:
-                alert = _create_alert(
-                    workshop_id=workshop_id,
-                    pit_id=pit_id,
-                    device_id=reading.device_id,
-                    alert_type=AlertType.HUMIDITY_TOO_HIGH,
-                    severity=AlertSeverity.WARNING,
-                    message=(
-                        f"Humidity {reading.humidity:.1f}% exceeded max threshold of {humidity_max}%"
-                    ),
-                    trigger_value=reading.humidity,
-                    threshold_value=humidity_max,
-                    now=now,
-                )
-                db.add(alert)
-                triggered_alerts.append(alert)
+                if not await _alert_on_cooldown(db, reading.device_id, pit_id, AlertType.HUMIDITY_TOO_HIGH, COOLDOWN_MINUTES):
+                    alert = _create_alert(
+                        workshop_id=workshop_id,
+                        pit_id=pit_id,
+                        device_id=reading.device_id,
+                        alert_type=AlertType.HUMIDITY_TOO_HIGH,
+                        severity=AlertSeverity.WARNING,
+                        message=(
+                            f"Humidity {reading.humidity:.1f}% exceeded max threshold of {humidity_max}%"
+                        ),
+                        trigger_value=reading.humidity,
+                        threshold_value=humidity_max,
+                        now=now,
+                    )
+                    db.add(alert)
+                    triggered_alerts.append(alert)
 
         # ── PM2.5 ──────────────────────────────────────────────────────────
         if reading.pm25 is not None:
             pm25_status = evaluate_pm25_status(reading.pm25, pm25_warning, pm25_critical)
             if pm25_status in (SensorStatus.WARNING, SensorStatus.CRITICAL):
-                severity = (
-                    AlertSeverity.CRITICAL
-                    if pm25_status == SensorStatus.CRITICAL
-                    else AlertSeverity.WARNING
-                )
-                threshold = pm25_critical if pm25_status == SensorStatus.CRITICAL else pm25_warning
-                alert = _create_alert(
-                    workshop_id=workshop_id,
-                    pit_id=pit_id,
-                    device_id=reading.device_id,
-                    alert_type=AlertType.HIGH_PM25,
-                    severity=severity,
-                    message=(
-                        f"PM2.5 level {reading.pm25:.1f} μg/m³ exceeded "
-                        f"{'critical' if severity == AlertSeverity.CRITICAL else 'warning'} "
-                        f"threshold of {threshold} μg/m³"
-                    ),
-                    trigger_value=reading.pm25,
-                    threshold_value=threshold,
-                    now=now,
-                )
-                db.add(alert)
-                triggered_alerts.append(alert)
+                if not await _alert_on_cooldown(db, reading.device_id, pit_id, AlertType.HIGH_PM25, COOLDOWN_MINUTES):
+                    severity = (
+                        AlertSeverity.CRITICAL
+                        if pm25_status == SensorStatus.CRITICAL
+                        else AlertSeverity.WARNING
+                    )
+                    threshold = pm25_critical if pm25_status == SensorStatus.CRITICAL else pm25_warning
+                    alert = _create_alert(
+                        workshop_id=workshop_id,
+                        pit_id=pit_id,
+                        device_id=reading.device_id,
+                        alert_type=AlertType.HIGH_PM25,
+                        severity=severity,
+                        message=(
+                            f"PM2.5 level {reading.pm25:.1f} μg/m³ exceeded "
+                            f"{'critical' if severity == AlertSeverity.CRITICAL else 'warning'} "
+                            f"threshold of {threshold} μg/m³"
+                        ),
+                        trigger_value=reading.pm25,
+                        threshold_value=threshold,
+                        now=now,
+                    )
+                    db.add(alert)
+                    triggered_alerts.append(alert)
 
         # ── BME680 IAQ ─────────────────────────────────────────────────────
         if reading.iaq is not None:
             iaq_status = evaluate_iaq_status(reading.iaq, iaq_warning, iaq_critical)
             if iaq_status in (SensorStatus.WARNING, SensorStatus.CRITICAL):
-                severity = (
-                    AlertSeverity.CRITICAL
-                    if iaq_status == SensorStatus.CRITICAL
-                    else AlertSeverity.WARNING
-                )
-                threshold = iaq_critical if iaq_status == SensorStatus.CRITICAL else iaq_warning
-                alert = _create_alert(
-                    workshop_id=workshop_id,
-                    pit_id=pit_id,
-                    device_id=reading.device_id,
-                    alert_type=AlertType.HIGH_IAQ,
-                    severity=severity,
-                    message=(
-                        f"IAQ level {reading.iaq:.1f} exceeded "
-                        f"{'critical' if severity == AlertSeverity.CRITICAL else 'warning'} "
-                        f"threshold of {threshold}"
-                    ),
-                    trigger_value=reading.iaq,
-                    threshold_value=threshold,
-                    now=now,
-                )
-                db.add(alert)
-                triggered_alerts.append(alert)
+                if not await _alert_on_cooldown(db, reading.device_id, pit_id, AlertType.HIGH_IAQ, COOLDOWN_MINUTES):
+                    severity = (
+                        AlertSeverity.CRITICAL
+                        if iaq_status == SensorStatus.CRITICAL
+                        else AlertSeverity.WARNING
+                    )
+                    threshold = iaq_critical if iaq_status == SensorStatus.CRITICAL else iaq_warning
+                    alert = _create_alert(
+                        workshop_id=workshop_id,
+                        pit_id=pit_id,
+                        device_id=reading.device_id,
+                        alert_type=AlertType.HIGH_IAQ,
+                        severity=severity,
+                        message=(
+                            f"IAQ level {reading.iaq:.1f} exceeded "
+                            f"{'critical' if severity == AlertSeverity.CRITICAL else 'warning'} "
+                            f"threshold of {threshold}"
+                        ),
+                        trigger_value=reading.iaq,
+                        threshold_value=threshold,
+                        now=now,
+                    )
+                    db.add(alert)
+                    triggered_alerts.append(alert)
 
         if triggered_alerts:
             logger.info(
@@ -331,6 +336,29 @@ async def evaluate_alerts(
         )
 
     return triggered_alerts
+
+
+async def _alert_on_cooldown(
+    db: AsyncSession,
+    device_id: str,
+    pit_id: int,
+    alert_type: str,
+    cooldown_minutes: int,
+) -> bool:
+    """Check if an unacknowledged alert of the same type exists within cooldown window."""
+    cutoff = utc_now() - timedelta(minutes=cooldown_minutes)
+    result = await db.execute(
+        select(Alert.id).where(
+            and_(
+                Alert.device_id == device_id,
+                Alert.pit_id == pit_id,
+                Alert.alert_type == alert_type,
+                Alert.is_acknowledged == False,
+                Alert.created_at >= cutoff,
+            )
+        ).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 def _create_alert(

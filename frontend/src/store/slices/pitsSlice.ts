@@ -49,6 +49,7 @@ const pitsSlice = createSlice({
           pm10: number | null
           iaq: number | null
           pressure: number | null
+          gas_resistance: number | null
           is_online: boolean
           recorded_at: string
         }
@@ -66,6 +67,7 @@ const pitsSlice = createSlice({
           pm10: data.pm10,
           iaq: data.iaq,
           pressure: data.pressure,
+          gas_resistance: data.gas_resistance,
           is_device_online: data.is_online,
           last_reading_at: data.recorded_at,
         }

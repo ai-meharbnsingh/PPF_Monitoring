@@ -152,6 +152,7 @@ async def broadcast_sensor_update(
             "pm10": reading.pm10,
             "iaq": reading.iaq,
             "pressure": reading.pressure,
+            "gas_resistance": reading.gas_resistance,
             "is_online": True,
             "recorded_at": reading.created_at.isoformat(),
         },

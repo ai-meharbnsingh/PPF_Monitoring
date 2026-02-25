@@ -15,7 +15,9 @@ interface DeviceRegisterModalProps {
 }
 
 const SENSOR_OPTIONS: { value: SensorTypeCode; label: string }[] = [
+  { value: 'BME688', label: 'BME688 (Temp + Humidity + Pressure + IAQ)' },
   { value: 'DHT22', label: 'DHT22 (Temp + Humidity)' },
+  { value: 'DHT11', label: 'DHT11 (Temp + Humidity - Basic)' },
   { value: 'BME680', label: 'BME680 (Temp + Humidity + IAQ)' },
 ]
 

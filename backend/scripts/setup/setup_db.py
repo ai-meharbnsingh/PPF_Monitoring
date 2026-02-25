@@ -32,6 +32,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from src.config.settings import get_settings
 from src.utils.logger import get_logger
 
+# Import all models so SQLAlchemy relationship() references resolve correctly
+import src.models.user          # noqa: F401
+import src.models.workshop      # noqa: F401
+import src.models.pit           # noqa: F401
+import src.models.device        # noqa: F401
+import src.models.sensor_data   # noqa: F401
+import src.models.job           # noqa: F401
+import src.models.subscription  # noqa: F401
+import src.models.alert         # noqa: F401
+import src.models.audit_log     # noqa: F401
+import src.models.device_command  # noqa: F401
+
 logger = get_logger("setup_db")
 settings = get_settings()
 
@@ -154,11 +166,43 @@ SENSOR_TYPES = [
             "via Bosch BSEC library. Replaces DHT22+PMS5003 when used standalone."
         ),
     },
+    {
+        "code": "BME688",
+        "name": "Bosch BME688 Environmental Sensor",
+        "manufacturer": "Bosch Sensortec",
+        "protocol": "I2C/SPI",
+        "capabilities": json.dumps({
+            "temperature": True, "humidity": True,
+            "pressure": True, "pm25": False, "pm10": False,
+            "iaq": True, "gas_resistance": True,
+        }),
+        "description": (
+            "Next-gen all-in-one environmental sensor (pin-compatible with BME680). "
+            "Measures temp, humidity, pressure, gas resistance, and computes IAQ index. "
+            "Primary sensor for BME688+DHT fallback configuration."
+        ),
+    },
+    {
+        "code": "DHT11",
+        "name": "Basic Temperature & Humidity Sensor",
+        "manufacturer": "AOSONG",
+        "protocol": "GPIO",
+        "capabilities": json.dumps({
+            "temperature": True, "humidity": True,
+            "pressure": False, "pm25": False, "pm10": False,
+            "iaq": False, "gas_resistance": False,
+        }),
+        "description": (
+            "Basic digital temperature and humidity sensor. "
+            "Single-wire protocol. Accuracy: ±2°C temp, ±5% humidity. "
+            "Used as fallback sensor when BME688 is unavailable."
+        ),
+    },
 ]
 
 
 async def seed_sensor_types(session: AsyncSession) -> dict:
-    step("STEP 3 — Seeding sensor types (DHT22 · PMS5003 · BME680)")
+    step("STEP 3 — Seeding sensor types (DHT22 · PMS5003 · BME680 · BME688 · DHT11)")
     from src.models.device import SensorType
 
     stats = {"created": 0, "exists": 0}

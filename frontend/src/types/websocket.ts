@@ -13,6 +13,7 @@ export interface WsSensorUpdateEvent {
     pm10: number | null
     iaq: number | null
     pressure: number | null
+    gas_resistance: number | null
     is_online: boolean
     recorded_at: string
   }

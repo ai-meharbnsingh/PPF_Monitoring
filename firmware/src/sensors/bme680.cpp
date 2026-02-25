@@ -6,7 +6,9 @@
  * Created: 2026-02-22
  */
 
-#ifdef SENSOR_CONFIG_BME680
+#include "config.h"
+
+#if defined(SENSOR_CONFIG_BME680) || defined(SENSOR_CONFIG_BME688_DHT_FALLBACK)
 
 #include "bme680.h"
 
@@ -146,4 +148,4 @@ bool BME680Sensor::_isValid(const BME680Reading& r) const {
     return true;
 }
 
-#endif // SENSOR_CONFIG_BME680
+#endif // SENSOR_CONFIG_BME680 || SENSOR_CONFIG_BME688_DHT_FALLBACK

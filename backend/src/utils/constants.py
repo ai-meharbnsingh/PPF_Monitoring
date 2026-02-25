@@ -126,8 +126,10 @@ class AlertSeverity(str, Enum):
 # ─── Sensor Types ─────────────────────────────────────────────────────────────
 class SensorTypeCode(str, Enum):
     DHT22 = "DHT22"
+    DHT11 = "DHT11"
     PMS5003 = "PMS5003"
     BME680 = "BME680"
+    BME688 = "BME688"
 
 
 # ─── Subscription Plans ───────────────────────────────────────────────────────

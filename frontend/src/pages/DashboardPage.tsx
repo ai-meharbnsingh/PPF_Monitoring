@@ -55,7 +55,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 overflow-hidden">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>

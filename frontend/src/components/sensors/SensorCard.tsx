@@ -20,7 +20,7 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
   return (
     <div
       className={clsx(
-        'card border transition-all duration-300 hover:scale-[1.01]',
+        'card border transition-all duration-300 hover:scale-[1.01] overflow-hidden min-w-0',
         colors.border,
       )}
     >
@@ -46,7 +46,7 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
       </div>
 
       {/* Sensor tiles grid */}
-      <div className="grid grid-cols-2 gap-2 p-4">
+      <div className="grid grid-cols-2 gap-2 p-3 sm:p-4 min-w-0">
         <SensorTile
           metric="temperature"
           value={sensors?.temperature ?? null}
@@ -67,6 +67,20 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
           value={sensors?.pm10 ?? null}
           status={sensors?.pm10_status ?? 'unknown'}
         />
+        {sensors?.pressure != null && (
+          <SensorTile
+            metric="pressure"
+            value={sensors.pressure}
+            status="good"
+          />
+        )}
+        {sensors?.gas_resistance != null && (
+          <SensorTile
+            metric="gas_resistance"
+            value={Math.round(sensors.gas_resistance / 1000)}
+            status="good"
+          />
+        )}
         {sensors?.iaq != null && (
           <SensorTile
             metric="iaq"

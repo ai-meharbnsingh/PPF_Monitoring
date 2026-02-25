@@ -248,6 +248,8 @@ async def _build_latest_summary(db: AsyncSession, pit: Pit, thresholds: dict) ->
             "pm25": None,
             "pm10": None,
             "iaq": None,
+            "pressure": None,
+            "gas_resistance": None,
             "temp_status": "unknown",
             "humidity_status": "unknown",
             "pm25_status": "unknown",
@@ -265,6 +267,8 @@ async def _build_latest_summary(db: AsyncSession, pit: Pit, thresholds: dict) ->
         "pm25": reading.pm25,
         "pm10": reading.pm10,
         "iaq": reading.iaq,
+        "pressure": reading.pressure,
+        "gas_resistance": reading.gas_resistance,
         "temp_status": evaluate_temperature_status(
             reading.temperature, thresholds["temp_min"], thresholds["temp_max"]
         ).value,

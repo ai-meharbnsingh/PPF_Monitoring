@@ -19,19 +19,19 @@ export function SensorTile({ metric, value, status, className }: SensorTileProps
   return (
     <div
       className={clsx(
-        'flex flex-col gap-1 p-3 rounded-xl border transition-colors duration-300',
+        'flex flex-col gap-1 p-3 rounded-xl border transition-colors duration-300 overflow-hidden min-w-0',
         colors.bg,
         colors.border,
         className,
       )}
     >
-      <span className={clsx('text-xs font-medium tracking-wide', colors.text)}>{label}</span>
-      <div className="flex items-baseline gap-1">
-        <span className={clsx('text-2xl font-bold', colors.text)}>
+      <span className={clsx('text-[11px] font-medium tracking-wide', colors.text)}>{label}</span>
+      <div className="flex items-baseline gap-1 flex-wrap">
+        <span className={clsx('text-lg sm:text-2xl font-bold whitespace-nowrap', colors.text)}>
           {value != null ? formatSensorValue(value) : '—'}
         </span>
         {value != null && (
-          <span className={clsx('text-xs opacity-60', colors.text)}>{unit}</span>
+          <span className={clsx('text-[10px] sm:text-xs opacity-60', colors.text)}>{unit}</span>
         )}
       </div>
     </div>

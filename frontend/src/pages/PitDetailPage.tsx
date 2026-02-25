@@ -19,11 +19,34 @@ import {
   Droplets,
   Wind,
   Gauge,
+  BarChart3,
   Wifi,
   WifiOff,
 } from 'lucide-react'
 
 const VIDEO_ROLES = ['owner', 'super_admin', 'staff'] as const
+
+function CameraTimestamp({ pitNumber, pitName }: { pitNumber: number; pitName: string }) {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  return (
+    <div className="absolute bottom-4 left-4 z-20 pointer-events-none space-y-0.5">
+      <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">
+        CAM_{String(pitNumber).padStart(2, '0')}_BAY · {pitName.toUpperCase()}
+      </p>
+      <p className="text-[9px] font-mono text-gray-500 uppercase">
+        {dateStr} {'  '} {timeStr}
+        {'  '}
+        <span className="text-red-400 font-bold">● LIVE</span>
+      </p>
+    </div>
+  )
+}
 
 export default function PitDetailPage() {
   const { pitId } = useParams<{ pitId: string }>()
@@ -160,6 +183,20 @@ export default function PitDetailPage() {
                 value={sensors?.pm10 ?? null}
                 status={sensors?.pm10_status ?? 'unknown'}
               />
+              {sensors?.pressure != null && (
+                <SensorTile
+                  metric="pressure"
+                  value={sensors.pressure}
+                  status="good"
+                />
+              )}
+              {sensors?.gas_resistance != null && (
+                <SensorTile
+                  metric="gas_resistance"
+                  value={Math.round(sensors.gas_resistance / 1000)}
+                  status="good"
+                />
+              )}
               {sensors?.iaq != null && (
                 <SensorTile
                   metric="iaq"
@@ -274,26 +311,30 @@ export default function PitDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Pressure — only when BME688 is reporting */}
+                {sensors?.pressure != null && (
+                  <div className={overlayCard} style={overlayCardStyle}>
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 shrink-0">
+                      <BarChart3 className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
+                        Pressure
+                      </p>
+                      <p className="text-sm font-mono font-bold text-white leading-none">
+                        {sensors.pressure.toFixed(1)}{' '}
+                        <span className="text-[9px] text-gray-500 font-normal">
+                          hPa
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── Camera label — bottom left ── */}
-              <div className="absolute bottom-4 left-4 z-20 pointer-events-none space-y-0.5">
-                <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">
-                  CAM_{String(pit.pit_number).padStart(2, '0')}_BAY ·{' '}
-                  {pit.name.toUpperCase()}
-                </p>
-                <p className="text-[9px] font-mono text-gray-500 uppercase">
-                  {new Date()
-                    .toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                    .toUpperCase()}
-                  {'  '}
-                  <span className="text-red-400 font-bold">● REC</span>
-                </p>
-              </div>
+              <CameraTimestamp pitNumber={pit.pit_number} pitName={pit.name} />
             </div>
 
             {/* ── Camera status strip ── */}

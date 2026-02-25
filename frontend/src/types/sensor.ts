@@ -11,8 +11,9 @@ export interface LatestSensorSummary {
   pm1: number | null             // μg/m³
   pm25: number | null            // μg/m³
   pm10: number | null            // μg/m³
-  pressure: number | null        // hPa (BME680)
-  iaq: number | null             // IAQ index 0–500 (BME680)
+  pressure: number | null        // hPa (BME680/BME688)
+  iaq: number | null             // IAQ index 0–500 (BME680/BME688)
+  gas_resistance: number | null  // Ohms (BME680/BME688)
   // Status labels from backend threshold evaluation
   temp_status: SensorStatus
   humidity_status: SensorStatus
@@ -81,6 +82,7 @@ export interface WsSensorUpdateData {
   pm10: number | null
   iaq: number | null
   pressure: number | null
+  gas_resistance: number | null
   is_online: boolean
   recorded_at: string
 }

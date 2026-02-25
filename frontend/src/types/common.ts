@@ -41,7 +41,7 @@ export type DeviceCommand =
 
 export type DeviceStatus = 'active' | 'disabled' | 'suspended' | 'maintenance'
 
-export type SensorTypeCode = 'DHT22' | 'PMS5003' | 'BME680'
+export type SensorTypeCode = 'DHT22' | 'DHT11' | 'PMS5003' | 'BME680' | 'BME688'
 
 export type PitStatus = 'active' | 'inactive' | 'maintenance'
 

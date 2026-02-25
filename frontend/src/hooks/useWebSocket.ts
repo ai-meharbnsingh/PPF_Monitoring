@@ -52,7 +52,7 @@ export function useWebSocket() {
       dispatch(newAlertReceived({ ...e.data, pit_id: e.pit_id }))
       toast.error(e.data.message, {
         duration: 6000,
-        id: `alert-${e.data.alert_id}`,
+        id: `alert-${e.data.alert_type}-${e.pit_id}`,
       })
     })
 

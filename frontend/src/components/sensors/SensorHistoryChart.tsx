@@ -44,6 +44,9 @@ interface ChartDataPoint {
   humidity?: number
   pm25?: number
   pm10?: number
+  pressure?: number
+  gas_resistance?: number
+  iaq?: number
 }
 
 const CHART_TOOLTIP_STYLE = {
@@ -76,6 +79,9 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
         humidity: r.humidity ?? undefined,
         pm25: r.pm25 ?? undefined,
         pm10: r.pm10 ?? undefined,
+        pressure: r.pressure ?? undefined,
+        gas_resistance: r.gas_resistance != null ? Math.round(r.gas_resistance / 1000) : undefined,
+        iaq: r.iaq ?? undefined,
       }))
       setData(points.reverse())
     } catch {
@@ -128,6 +134,13 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
               stroke="rgba(255,255,255,0.05)"
             />
             <YAxis
+              yAxisId="left"
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              stroke="rgba(255,255,255,0.05)"
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
               tick={{ fontSize: 10, fill: '#6b7280' }}
               stroke="rgba(255,255,255,0.05)"
             />
@@ -143,6 +156,7 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
               stroke="#f87171"
               dot={false}
               strokeWidth={2}
+              yAxisId="left"
             />
             <Line
               type="monotone"
@@ -151,6 +165,7 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
               stroke="#00f0ff"
               dot={false}
               strokeWidth={2}
+              yAxisId="left"
             />
             <Line
               type="monotone"
@@ -159,6 +174,7 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
               stroke="#fb923c"
               dot={false}
               strokeWidth={2}
+              yAxisId="left"
             />
             <Line
               type="monotone"
@@ -167,6 +183,34 @@ export function SensorHistoryChart({ pitId, className }: SensorHistoryChartProps
               stroke="#a78bfa"
               dot={false}
               strokeWidth={2}
+              yAxisId="left"
+            />
+            <Line
+              type="monotone"
+              dataKey="pressure"
+              name="Pressure (hPa)"
+              stroke="#fbbf24"
+              dot={false}
+              strokeWidth={2}
+              yAxisId="right"
+            />
+            <Line
+              type="monotone"
+              dataKey="iaq"
+              name="IAQ"
+              stroke="#c084fc"
+              dot={false}
+              strokeWidth={2}
+              yAxisId="left"
+            />
+            <Line
+              type="monotone"
+              dataKey="gas_resistance"
+              name="Gas (kOhm)"
+              stroke="#34d399"
+              dot={false}
+              strokeWidth={2}
+              yAxisId="right"
             />
           </LineChart>
         </ResponsiveContainer>
