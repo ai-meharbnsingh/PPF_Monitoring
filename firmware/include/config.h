@@ -17,16 +17,18 @@
 
 // ─── SENSOR HARDWARE SELECTION ───────────────────────────────────────────────
 // Set via platformio.ini build_flags:
-//   -DSENSOR_DHT22_ONLY   → DHT22 only (no PMS5003 warmup — use for testing)
-//   (default)             → DHT22 + PMS5003 (production kit)
-// OR uncomment SENSOR_CONFIG_BME680 below for BME680-based kit.
+//   -DSENSOR_BME688_DHT_FALLBACK → BME688 primary + DHT11 fallback
+//   -DSENSOR_DHT22_ONLY          → DHT11 only (no PMS5003 warmup — testing)
+//   (default)                    → DHT22 + PMS5003 (production kit)
 
-#ifdef SENSOR_DHT22_ONLY
-  #define SENSOR_CONFIG_DHT22         // DHT22 only — no PMS5003, no 30s warmup
+#ifdef SENSOR_BME688_DHT_FALLBACK
+  #define SENSOR_CONFIG_BME688_DHT_FALLBACK   // BME688 primary, DHT11 fallback
+#elif defined(SENSOR_DHT22_ONLY)
+  #define SENSOR_CONFIG_DHT22                  // DHT11 only — no PMS5003
 #else
-  #define SENSOR_CONFIG_DHT22_PMS5003 // Production: DHT22 + PMS5003
+  #define SENSOR_CONFIG_DHT22_PMS5003          // Production: DHT22 + PMS5003
 #endif
-// #define SENSOR_CONFIG_BME680       // Alternative: BME680 standalone
+// #define SENSOR_CONFIG_BME680               // Alternative: BME680 standalone
 
 
 // ─── DEVICE IDENTITY (from backend admin panel) ───────────────────────────────
@@ -34,10 +36,10 @@
 // copy the device_id and license_key here.
 
 #define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84
-#define LICENSE_KEY     "LIC-1RL0-5S1U-KHNA"    // Registered license key
-#define WORKSHOP_ID     15                       // PP Monitoring Workshop
-#define PIT_ID          10                       // Main Pit
-#define FIRMWARE_VER    "1.0.0"
+#define LICENSE_KEY     "LIC-A4RE-38HN-GVL2"    // Registered license key
+#define WORKSHOP_ID     1                        // PP Monitoring Workshop
+#define PIT_ID          1                        // Pit 1
+#define FIRMWARE_VER    "1.1.0"
 
 
 // ─── NETWORK: WiFi (used when USE_WIFI is set in platformio.ini) ──────────────
@@ -62,7 +64,7 @@
 
 // ─── MQTT BROKER ──────────────────────────────────────────────────────────────
 #define MQTT_BROKER_HOST    "192.168.29.16"      // Mac on Jas_Mehar WiFi
-#define MQTT_BROKER_PORT    1884                 // socat forwards 1884 → Docker Mosquitto 1883
+#define MQTT_BROKER_PORT    1883                 // Homebrew Mosquitto direct
 #define MQTT_USERNAME       "ppf_backend"         // Must match backend .env MQTT_USERNAME
 #define MQTT_PASSWORD       "BsW0mmVr5CoDAzW21ibADB7t-kM" // Must match backend .env MQTT_PASSWORD
 #define MQTT_KEEPALIVE_SEC  60
@@ -122,8 +124,8 @@
 #define PMS5003_TIMEOUT_MS  2000   // Timeout waiting for frame
 
 
-// ─── BME680 SETTINGS ──────────────────────────────────────────────────────────
-#define BME680_I2C_ADDR     0x77   // Default address (0x76 if SDO=GND)
+// ─── BME680/BME688 SETTINGS ─────────────────────────────────────────────────
+#define BME680_I2C_ADDR     0x76   // BME688 address with SDO=GND (0x77 if SDO=VCC)
 #define BME680_TEMP_OFFSET  0.0f   // Calibration offset in °C
 
 

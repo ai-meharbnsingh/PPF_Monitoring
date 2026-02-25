@@ -74,6 +74,11 @@
   #include "sensors/bme680.h"
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+  #include "sensors/bme680.h"
+  #include "sensors/dht22.h"
+#endif
+
 
 // ─── Payload Builder ──────────────────────────────────────────────────────────
 class PayloadBuilder {
@@ -117,6 +122,19 @@ public:
                              const char*          timestamp,
                              char*                buf,
                              size_t               len);
+#endif
+
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+    /**
+     * Build BME688 JSON payload. If BME688 read failed but DHT provided
+     * temp/humidity, sensor_type is "BME688" with fallback_active=true.
+     */
+    static bool buildBME688WithFallback(const BME680Reading& bme,
+                                         const DHT22Reading&  dht,
+                                         bool                 bmeFailed,
+                                         const char*          timestamp,
+                                         char*                buf,
+                                         size_t               len);
 #endif
 
     /**

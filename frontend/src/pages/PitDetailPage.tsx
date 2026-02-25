@@ -19,6 +19,7 @@ import {
   Droplets,
   Wind,
   Gauge,
+  BarChart3,
   Wifi,
   WifiOff,
 } from 'lucide-react'
@@ -182,6 +183,20 @@ export default function PitDetailPage() {
                 value={sensors?.pm10 ?? null}
                 status={sensors?.pm10_status ?? 'unknown'}
               />
+              {sensors?.pressure != null && (
+                <SensorTile
+                  metric="pressure"
+                  value={sensors.pressure}
+                  status="good"
+                />
+              )}
+              {sensors?.gas_resistance != null && (
+                <SensorTile
+                  metric="gas_resistance"
+                  value={Math.round(sensors.gas_resistance / 1000)}
+                  status="good"
+                />
+              )}
               {sensors?.iaq != null && (
                 <SensorTile
                   metric="iaq"
@@ -291,6 +306,26 @@ export default function PitDetailPage() {
                         {sensors.iaq.toFixed(0)}{' '}
                         <span className="text-[9px] text-gray-500 font-normal">
                           IAQ
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pressure — only when BME688 is reporting */}
+                {sensors?.pressure != null && (
+                  <div className={overlayCard} style={overlayCardStyle}>
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 shrink-0">
+                      <BarChart3 className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
+                        Pressure
+                      </p>
+                      <p className="text-sm font-mono font-bold text-white leading-none">
+                        {sensors.pressure.toFixed(1)}{' '}
+                        <span className="text-[9px] text-gray-500 font-normal">
+                          hPa
                         </span>
                       </p>
                     </div>

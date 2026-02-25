@@ -67,6 +67,20 @@ export function SensorCard({ pit, sensors }: SensorCardProps) {
           value={sensors?.pm10 ?? null}
           status={sensors?.pm10_status ?? 'unknown'}
         />
+        {sensors?.pressure != null && (
+          <SensorTile
+            metric="pressure"
+            value={sensors.pressure}
+            status="good"
+          />
+        )}
+        {sensors?.gas_resistance != null && (
+          <SensorTile
+            metric="gas_resistance"
+            value={Math.round(sensors.gas_resistance / 1000)}
+            status="good"
+          />
+        )}
         {sensors?.iaq != null && (
           <SensorTile
             metric="iaq"

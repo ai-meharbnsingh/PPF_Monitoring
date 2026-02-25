@@ -10,6 +10,7 @@ export const SENSOR_UNITS: Record<string, string> = {
   pm1: 'μg/m³',
   iaq: 'IAQ',
   pressure: 'hPa',
+  gas_resistance: 'kOhm',
 }
 
 export const SENSOR_LABELS: Record<string, string> = {
@@ -20,6 +21,7 @@ export const SENSOR_LABELS: Record<string, string> = {
   pm1: 'PM1',
   iaq: 'Air Quality',
   pressure: 'Pressure',
+  gas_resistance: 'Gas Resistance',
 }
 
 // ─── Status display labels ────────────────────────────────────────────────────

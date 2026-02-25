@@ -78,11 +78,13 @@ class LatestSensorSummary(BaseModel):
     is_device_online: bool
 
     # Environment
-    temperature: Optional[float]
-    humidity: Optional[float]
-    pm25: Optional[float]
-    pm10: Optional[float]
-    iaq: Optional[float]
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    pm25: Optional[float] = None
+    pm10: Optional[float] = None
+    iaq: Optional[float] = None
+    pressure: Optional[float] = None
+    gas_resistance: Optional[float] = None
 
     # Status labels (good / warning / critical / unknown)
     temp_status: str

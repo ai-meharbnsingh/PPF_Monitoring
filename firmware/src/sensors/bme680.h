@@ -28,7 +28,7 @@
 
 #pragma once
 
-#ifdef SENSOR_CONFIG_BME680
+#if defined(SENSOR_CONFIG_BME680) || defined(SENSOR_CONFIG_BME688_DHT_FALLBACK)
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -99,4 +99,4 @@ private:
     bool _isValid(const BME680Reading& r) const;
 };
 
-#endif // SENSOR_CONFIG_BME680
+#endif // SENSOR_CONFIG_BME680 || SENSOR_CONFIG_BME688_DHT_FALLBACK

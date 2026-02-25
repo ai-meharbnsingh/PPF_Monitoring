@@ -51,6 +51,11 @@
   #include "sensors/bme680.h"
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+  #include "sensors/bme680.h"
+  #include "sensors/dht22.h"
+#endif
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global objects
@@ -72,12 +77,18 @@ NTPSync     ntp;
   BME680Sensor bmeSensor(PIN_I2C_SDA, PIN_I2C_SCL, BME680_I2C_ADDR);
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+  BME680Sensor bmeSensor(PIN_I2C_SDA, PIN_I2C_SCL, BME680_I2C_ADDR);
+  DHT22Sensor  dhtSensor(PIN_DHT22);
+  static bool  _bmeAvailable = false;
+#endif
+
 // ─── Timing ───────────────────────────────────────────────────────────────────
 static uint32_t _lastSensorPublishMs  = 0;
 static uint32_t _lastStatusPublishMs  = 0;
 
 // ─── JSON payload buffers ────────────────────────────────────────────────────
-static char _sensorBuf[400];
+static char _sensorBuf[512];
 static char _statusBuf[256];
 static char _tsBuf[24];   // "2026-02-22T10:30:00Z\0" = 21 bytes
 
@@ -114,6 +125,9 @@ static void printBanner() {
 #endif
 #ifdef SENSOR_CONFIG_BME680
     DEBUG_PRINTLN("║  Sensors:   BME680                           ║");
+#endif
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+    DEBUG_PRINTLN("║  Sensors:   BME688 + DHT11 fallback          ║");
 #endif
     DEBUG_PRINTF( "║  Network:   %-32s║\n", NetManager::interfaceType());
     DEBUG_PRINTLN("╚══════════════════════════════════════════════╝");
@@ -156,6 +170,18 @@ void setup() {
         blinkLed(10, 500);
         ESP.restart();
     }
+#endif
+
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+    // Try BME688 first (I2C)
+    _bmeAvailable = bmeSensor.begin();
+    if (_bmeAvailable) {
+        DEBUG_PRINTLN("[MAIN] BME688 initialized — primary sensor OK");
+    } else {
+        DEBUG_PRINTLN("[MAIN] WARNING — BME688 not found, using DHT11 fallback");
+    }
+    // Always init DHT11 as fallback
+    dhtSensor.begin();
 #endif
 
     // ── Network ───────────────────────────────────────────────────────────
@@ -284,6 +310,44 @@ void loop() {
         }
 
 #endif  // SENSOR_CONFIG_BME680
+
+#ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
+
+        BME680Reading bmeData = {};
+        DHT22Reading  dhtData = {};
+        bool bmeFailed = true;
+
+        if (_bmeAvailable) {
+            bmeData = bmeSensor.read();
+            bmeFailed = !bmeData.valid;
+            if (bmeFailed) {
+                DEBUG_PRINTLN("[MAIN] BME688 read failed — trying DHT11 fallback");
+            }
+        }
+
+        if (bmeFailed) {
+            dhtData = dhtSensor.read();
+            if (!dhtData.valid) {
+                DEBUG_PRINTLN("[MAIN] Both BME688 and DHT11 read failed");
+                blinkLed(4, 80);   // 4 rapid blinks = both sensors failed
+            }
+        }
+
+        // Publish if we have any valid data
+        bool hasData = (!bmeFailed) || (bmeFailed && dhtData.valid);
+        if (hasData) {
+            if (PayloadBuilder::buildBME688WithFallback(
+                    bmeData, dhtData, bmeFailed,
+                    _tsBuf, _sensorBuf, sizeof(_sensorBuf))) {
+                if (mqtt.publishSensorData(_sensorBuf)) {
+                    digitalWrite(PIN_STATUS_LED, HIGH);
+                    delay(50);
+                    digitalWrite(PIN_STATUS_LED, LOW);
+                }
+            }
+        }
+
+#endif  // SENSOR_CONFIG_BME688_DHT_FALLBACK
     }
 
 
