@@ -74,7 +74,17 @@ class Settings(BaseSettings):
     SERVER_HOST: str = _yaml_config["server"]["host"]
     SERVER_PORT: int = _yaml_config["server"]["port"]
     WORKERS: int = _yaml_config["server"]["workers"]
-    CORS_ORIGINS: List[str] = Field(default_factory=lambda: _yaml_config["server"]["cors_origins"])
+    CORS_ORIGINS: str | List[str] = Field(default_factory=lambda: _yaml_config["server"]["cors_origins"])
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | List[str]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+
 
     # ── Database (sensitive values from .env) ────────────────────────────────
     DATABASE_USER: str

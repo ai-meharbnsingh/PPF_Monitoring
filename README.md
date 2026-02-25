@@ -352,6 +352,18 @@ npx playwright test tests/interactive_demo.spec.ts     # Interactive pause demo 
 | 2 · Production Deploy | ❌ Not started | DigitalOcean + SSL + hardware order |
 | 3 · Franchise Scale | ❌ Not started | Multi-tenant self-service onboarding |
 
+### Feature Iteration 1 (Tracking Page Overhaul)
+- **"Auto Studio" Dark Theme**: Premium glassmorphic UI matching the public splash page aesthetic.
+- **Live Bay Feed**: Interactive video placeholder with animated scanning laser and a fully responsive Maximize/Minimize full-screen toggle.
+- **Real-Time Telemetry**: Real-time temperature (`°C`), humidity (`%`), and air quality (`PM2.5`) widgets.
+- **Localization**: Seeded data and visuals optimized for domestic Indian markets (e.g., Mahindra XUV700, authentic license plate formats, and auto detailing environments).
+
+**How to Access the Customer View:**
+1. Start the backend stack and run the database seeds (`docker compose exec backend python seed_final.py`).
+2. Start the frontend development server (`cd frontend && npm run dev`).
+3. The seeded job creates a progress tracking link with token `GT3RSX`.
+4. Open your browser and navigate to: [http://localhost:5173/track/GT3RSX](http://localhost:5173/track/GT3RSX). No login is required.
+
 ---
 
 ## Known Issues

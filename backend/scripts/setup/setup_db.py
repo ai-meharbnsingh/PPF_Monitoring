@@ -32,6 +32,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from src.config.settings import get_settings
 from src.utils.logger import get_logger
 
+# Import all models early so SQLAlchemy's mapper registry is fully populated before any query triggers compilation
+from src.models.workshop import Workshop
+from src.models.user import User
+from src.models.pit import Pit
+from src.models.device import Device, SensorType
+from src.models.sensor_data import SensorData
+from src.models.job import Job
+from src.models.alert import Alert
+from src.models.subscription import Subscription
+from src.models.device_command import DeviceCommand
+from src.models.audit_log import AuditLog
+
 logger = get_logger("setup_db")
 settings = get_settings()
 
