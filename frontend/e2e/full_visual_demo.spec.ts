@@ -31,7 +31,7 @@ const SS_DIR    = path.join('screenshots', 'wave-2');
 const LIVE_WS_ID = 33;
 const LIVE_PIT_ID = 27;
 
-const SUPER_ADMIN = { username: 'super_admin', password: '4grZStIoPAX11CEEymamBw' };
+const SUPER_ADMIN = { username: 'super_admin', password: 'SuperAdmin@123' };
 const STAFF_PASS  = 'StaffPass123!';
 
 // ─── Helper: screenshot with descriptive filename ──────────────────────────
@@ -172,7 +172,7 @@ test('🎬 Full Visual Demo — All Pages, Live ESP32, Real Data', async ({ page
   await ss(page, 'login--empty-form');
 
   await page.fill('input[placeholder="Enter your username"]', 'super_admin');
-  await page.fill('input[placeholder="Enter your password"]', '4grZStIoPAX11CEEymamBw');
+  await page.fill('input[placeholder="Enter your password"]', 'SuperAdmin@123');
   await ss(page, 'login--filled');
   await page.click('button:has-text("Sign In")');
 
@@ -418,7 +418,7 @@ test('🎬 Full Visual Demo — All Pages, Live ESP32, Real Data', async ({ page
   }
   await expect(page).toHaveURL(/.*\/login/, { timeout: 10000 });
   await page.fill('input[placeholder="Enter your username"]', 'super_admin');
-  await page.fill('input[placeholder="Enter your password"]', '4grZStIoPAX11CEEymamBw');
+  await page.fill('input[placeholder="Enter your password"]', 'SuperAdmin@123');
   await page.click('button:has-text("Sign In")');
   await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
   await waitStable(page, 2000);
