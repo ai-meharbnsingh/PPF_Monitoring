@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.alert import Alert, AlertConfig
 from src.models.device import Device
+from src.models.pit_alert_config import PitAlertConfig
 from src.models.sensor_data import SensorData
 from src.utils.constants import AlertSeverity, AlertType, SensorStatus
 from src.utils.helpers import (
@@ -31,6 +32,19 @@ from src.utils.helpers import (
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _resolve_threshold(pit_cfg, ws_cfg, field: str, default):
+    """Return pit override if set, else workshop config, else hardcoded default."""
+    if pit_cfg is not None:
+        val = getattr(pit_cfg, field, None)
+        if val is not None:
+            return val
+    if ws_cfg is not None:
+        val = getattr(ws_cfg, field, None)
+        if val is not None:
+            return val
+    return default
 
 
 def parse_sensor_payload(raw_payload: str) -> Optional[dict]:
@@ -179,10 +193,12 @@ async def evaluate_alerts(
     pit_id: int,
 ) -> list[Alert]:
     """
-    Check sensor reading against workshop thresholds and create alerts.
+    Check sensor reading against alert thresholds and create alerts.
 
-    Fetches AlertConfig for the workshop. Uses defaults from constants if no
-    custom config exists. Creates Alert records for any threshold violations.
+    Resolution order for each threshold:
+      1. Per-pit PitAlertConfig (if set and non-null)
+      2. Per-workshop AlertConfig
+      3. Hardcoded defaults
 
     Args:
         db: Database session
@@ -197,22 +213,28 @@ async def evaluate_alerts(
     COOLDOWN_MINUTES = 5
 
     try:
-        # Fetch workshop alert config (or use defaults)
+        # Fetch workshop alert config
         config_result = await db.execute(
             select(AlertConfig).where(AlertConfig.workshop_id == workshop_id)
         )
         config = config_result.scalar_one_or_none()
 
-        # Use defaults if no custom config
-        temp_min = config.temp_min if config else 15.0
-        temp_max = config.temp_max if config else 35.0
-        humidity_max = config.humidity_max if config else 70.0
-        pm25_warning = config.pm25_warning if config else 12.0
-        pm25_critical = config.pm25_critical if config else 35.4
-        pm10_warning = config.pm10_warning if config else 54.0
-        pm10_critical = config.pm10_critical if config else 154.0
-        iaq_warning = config.iaq_warning if config else 100.0
-        iaq_critical = config.iaq_critical if config else 150.0
+        # Fetch per-pit alert config overrides
+        pit_config_result = await db.execute(
+            select(PitAlertConfig).where(PitAlertConfig.pit_id == pit_id)
+        )
+        pit_config = pit_config_result.scalar_one_or_none()
+
+        # Resolve thresholds: pit override → workshop config → default
+        temp_min = _resolve_threshold(pit_config, config, "temp_min", 15.0)
+        temp_max = _resolve_threshold(pit_config, config, "temp_max", 35.0)
+        humidity_max = _resolve_threshold(pit_config, config, "humidity_max", 70.0)
+        pm25_warning = _resolve_threshold(pit_config, config, "pm25_warning", 12.0)
+        pm25_critical = _resolve_threshold(pit_config, config, "pm25_critical", 35.4)
+        pm10_warning = _resolve_threshold(pit_config, config, "pm10_warning", 54.0)
+        pm10_critical = _resolve_threshold(pit_config, config, "pm10_critical", 154.0)
+        iaq_warning = _resolve_threshold(pit_config, config, "iaq_warning", 100.0)
+        iaq_critical = _resolve_threshold(pit_config, config, "iaq_critical", 150.0)
 
         now = utc_now()
 

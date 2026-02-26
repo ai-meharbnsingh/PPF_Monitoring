@@ -127,28 +127,35 @@ void NetManager::_initEthernet() {
 //   the call, then re-arm it immediately after.
 //
 void NetManager::_initWiFi() {
-  // 1. Try connecting with hardcoded credentials from config.h first.
-  // This ensures we bypass the portal if the active hotspot matches our config.
-  DEBUG_PRINTF("[NET] Attempting direct connection to SSID: %s\n", WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // 1. If no hardcoded SSID, skip direct connect and clear any stale NVS creds
+  //    so the portal always opens for fresh provisioning.
+  // 1. If hardcoded SSID is set, try direct connection first.
+  if (strlen(WIFI_SSID) > 0) {
+    DEBUG_PRINTF("[NET] Attempting direct connection to SSID: %s\n", WIFI_SSID);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  uint32_t startMs = millis();
-  while (WiFi.status() != WL_CONNECTED &&
-         (millis() - startMs < WIFI_TIMEOUT_MS)) {
-    delay(500);
-    DEBUG_PRINT(".");
+    uint32_t startMs = millis();
+    while (WiFi.status() != WL_CONNECTED &&
+           (millis() - startMs < WIFI_TIMEOUT_MS)) {
+      delay(500);
+      DEBUG_PRINT(".");
+    }
+    DEBUG_PRINTLN();
+
+    if (WiFi.status() == WL_CONNECTED) {
+      _everConnected = true;
+      DEBUG_PRINTF("[NET] WiFi connected directly — IP: %s\n",
+                   WiFi.localIP().toString().c_str());
+      return;
+    }
+
+    DEBUG_PRINTLN(
+        "[NET] Direct connection failed. Starting WiFiManager portal...");
+  } else {
+    // No hardcoded SSID — WiFiManager will use saved NVS creds if available,
+    // or open captive portal if no creds are saved / saved creds fail.
+    DEBUG_PRINTLN("[NET] No hardcoded SSID — WiFiManager will handle connection");
   }
-  DEBUG_PRINTLN();
-
-  if (WiFi.status() == WL_CONNECTED) {
-    _everConnected = true;
-    DEBUG_PRINTF("[NET] WiFi connected directly — IP: %s\n",
-                 WiFi.localIP().toString().c_str());
-    return;
-  }
-
-  DEBUG_PRINTLN(
-      "[NET] Direct connection failed. Starting WiFiManager portal...");
 
   // 2. Fall back to WiFiManager if direct connection fails.
   WiFiManager wm;

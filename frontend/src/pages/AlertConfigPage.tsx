@@ -55,19 +55,19 @@ export default function AlertConfigPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-5"
+        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-5"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Alerts
       </button>
 
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Alert Thresholds</h1>
+      <h1 className="text-xl font-bold text-white mb-6">Alert Thresholds</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Temperature */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Temperature (°C)</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="font-semibold text-gray-200 mb-4">Temperature (°C)</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Min" type="number" step="0.1" {...register('temp_min', { valueAsNumber: true })} />
             <Input label="Max" type="number" step="0.1" {...register('temp_max', { valueAsNumber: true })} />
           </div>
@@ -75,14 +75,14 @@ export default function AlertConfigPage() {
 
         {/* Humidity */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Humidity (%)</h2>
+          <h2 className="font-semibold text-gray-200 mb-4">Humidity (%)</h2>
           <Input label="Max" type="number" step="0.1" {...register('humidity_max', { valueAsNumber: true })} />
         </div>
 
         {/* PM2.5 */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">PM2.5 (μg/m³)</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="font-semibold text-gray-200 mb-4">PM2.5 (μg/m³)</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Warning" type="number" step="0.1" {...register('pm25_warning', { valueAsNumber: true })} />
             <Input label="Critical" type="number" step="0.1" {...register('pm25_critical', { valueAsNumber: true })} />
           </div>
@@ -90,8 +90,8 @@ export default function AlertConfigPage() {
 
         {/* PM10 */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">PM10 (μg/m³)</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="font-semibold text-gray-200 mb-4">PM10 (μg/m³)</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Warning" type="number" step="0.1" {...register('pm10_warning', { valueAsNumber: true })} />
             <Input label="Critical" type="number" step="0.1" {...register('pm10_critical', { valueAsNumber: true })} />
           </div>
@@ -99,8 +99,8 @@ export default function AlertConfigPage() {
 
         {/* IAQ */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Air Quality Index</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="font-semibold text-gray-200 mb-4">Air Quality Index</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Warning" type="number" step="1" {...register('iaq_warning', { valueAsNumber: true })} />
             <Input label="Critical" type="number" step="1" {...register('iaq_critical', { valueAsNumber: true })} />
           </div>
@@ -108,7 +108,7 @@ export default function AlertConfigPage() {
 
         {/* Device offline */}
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Device Offline Threshold (seconds)</h2>
+          <h2 className="font-semibold text-gray-200 mb-4">Device Offline Threshold (seconds)</h2>
           <Input type="number" step="1" {...register('device_offline_threshold_seconds', { valueAsNumber: true })} />
         </div>
 

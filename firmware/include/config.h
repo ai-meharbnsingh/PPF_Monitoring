@@ -17,16 +17,18 @@
 
 // ─── SENSOR HARDWARE SELECTION ───────────────────────────────────────────────
 // Set via platformio.ini build_flags:
-//   -DSENSOR_DHT22_ONLY   → DHT22 only (no PMS5003 warmup — use for testing)
-//   (default)             → DHT22 + PMS5003 (production kit)
-// OR uncomment SENSOR_CONFIG_BME680 below for BME680-based kit.
+//   -DSENSOR_BME688_DHT_FALLBACK → BME688 primary + DHT11 fallback
+//   -DSENSOR_DHT22_ONLY          → DHT11 only (no PMS5003 warmup — testing)
+//   (default)                    → DHT22 + PMS5003 (production kit)
 
-#ifdef SENSOR_DHT22_ONLY
-  #define SENSOR_CONFIG_DHT22         // DHT22 only — no PMS5003, no 30s warmup
+#ifdef SENSOR_BME688_DHT_FALLBACK
+  #define SENSOR_CONFIG_BME688_DHT_FALLBACK   // BME688 primary, DHT11 fallback
+#elif defined(SENSOR_DHT22_ONLY)
+  #define SENSOR_CONFIG_DHT22                  // DHT11 only — no PMS5003
 #else
-  #define SENSOR_CONFIG_DHT22_PMS5003 // Production: DHT22 + PMS5003
+  #define SENSOR_CONFIG_DHT22_PMS5003          // Production: DHT22 + PMS5003
 #endif
-// #define SENSOR_CONFIG_BME680       // Alternative: BME680 standalone
+// #define SENSOR_CONFIG_BME680               // Alternative: BME680 standalone
 
 
 // ─── DEVICE IDENTITY (from backend admin panel) ───────────────────────────────
@@ -34,18 +36,26 @@
 // copy the device_id and license_key here.
 
 #define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84
-#define LICENSE_KEY     "LIC-1RL0-5S1U-KHNA"    // Registered license key
+#define LICENSE_KEY     "LIC-A4RE-38HN-GVL2"    // Registered license key
 #define WORKSHOP_ID     15                       // PP Monitoring Workshop
 #define PIT_ID          10                       // Main Pit
-#define FIRMWARE_VER    "1.0.0"
+#define FIRMWARE_VER    "1.1.0"
+
+
+// ─── OTA (Over-the-Air Update) ──────────────────────────────────────────────
+#define OTA_HOSTNAME        "PPF-ESP32"          // ArduinoOTA hostname (visible in PIO)
+#define OTA_PASSWORD        "ppf_ota_2024"       // ArduinoOTA password (must match PIO upload auth)
+#define OTA_WEB_PORT        8080                 // HTTP upload server port (browser: http://<ip>:8080)
+#define OTA_CHECK_INTERVAL  300000               // 5 min between remote update checks (ms)
+#define FIRMWARE_BASE_URL   "http://192.168.29.16:8000/api/v1/firmware"  // Backend firmware endpoint
 
 
 // ─── NETWORK: WiFi (used when USE_WIFI is set in platformio.ini) ──────────────
 // These are the FALLBACK credentials used when no credentials are saved in NVS.
 // On first boot (or after wm.resetSettings()), the device opens a captive portal
 // instead — connect to the AP below and enter your WiFi password via browser.
-#define WIFI_SSID       "Jas_Mehar"              // 2.4GHz WiFi (ESP32 only supports 2.4GHz)
-#define WIFI_PASSWORD   "airtel2730"             // WiFi password
+#define WIFI_SSID       ""                       // No hardcoded WiFi — use captive portal
+#define WIFI_PASSWORD   ""                       // Credentials saved to NVS via WiFiManager
 #define WIFI_TIMEOUT_MS 15000                    // 15 seconds connect attempt before portal
 
 // ─── CAPTIVE PORTAL (WiFiManager) ─────────────────────────────────────────────
@@ -56,15 +66,17 @@
 // Enter your factory WiFi SSID + password → saved to NVS flash.
 // All future boots auto-connect with those saved credentials.
 #define PROV_AP_NAME        "PPF-Monitor"    // Portal AP SSID (MAC suffix appended automatically)
-#define PROV_AP_PASSWORD    ""               // Leave empty for open portal (no password needed)
+#define PROV_AP_PASSWORD    "PPF@2024"       // Portal password — only your team can configure WiFi
 #define PROV_TIMEOUT_SEC    120              // Portal auto-closes after 120 s if nobody saves creds
 
 
 // ─── MQTT BROKER ──────────────────────────────────────────────────────────────
-#define MQTT_BROKER_HOST    "192.168.29.16"      // Mac on Jas_Mehar WiFi
-#define MQTT_BROKER_PORT    1884                 // socat forwards 1884 → Docker Mosquitto 1883
-#define MQTT_USERNAME       "ppf_backend"         // Must match backend .env MQTT_USERNAME
-#define MQTT_PASSWORD       "BsW0mmVr5CoDAzW21ibADB7t-kM" // Must match backend .env MQTT_PASSWORD
+// HiveMQ Cloud (TLS required on port 8883)
+#define MQTT_USE_TLS        1                    // 1 = TLS enabled (required for HiveMQ Cloud)
+#define MQTT_BROKER_HOST    "c4cb4d2b4a3e432c9d61b8b56ee359af.s1.eu.hivemq.cloud"
+#define MQTT_BROKER_PORT    8883                 // HiveMQ Cloud TLS port
+#define MQTT_USERNAME       "ppf_backend"
+#define MQTT_PASSWORD       "PPF@Mqtt2026!secure"
 #define MQTT_KEEPALIVE_SEC  60
 #define MQTT_QOS            1
 #define MQTT_RECONNECT_DELAY_MS  5000
@@ -122,8 +134,8 @@
 #define PMS5003_TIMEOUT_MS  2000   // Timeout waiting for frame
 
 
-// ─── BME680 SETTINGS ──────────────────────────────────────────────────────────
-#define BME680_I2C_ADDR     0x77   // Default address (0x76 if SDO=GND)
+// ─── BME680/BME688 SETTINGS ─────────────────────────────────────────────────
+#define BME680_I2C_ADDR     0x76   // BME688 address with SDO=GND (0x77 if SDO=VCC)
 #define BME680_TEMP_OFFSET  0.0f   // Calibration offset in °C
 
 

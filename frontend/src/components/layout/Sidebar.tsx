@@ -46,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     to: '/admin/staff',
-    label: 'Staff',
+    label: 'Team',
     icon: <Users className="h-5 w-5" />,
     roles: ['super_admin', 'owner'],
   },
@@ -94,15 +94,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex items-center justify-between px-5 py-5 border-b border-white/[0.08]">
           <div className="flex items-center gap-3">
             <div
-              className="h-9 w-9 rounded-xl flex items-center justify-center"
+              className="h-9 w-9 rounded-full flex items-center justify-center"
               style={{
                 background: 'rgba(0,240,255,0.15)',
                 border: '1px solid rgba(0,240,255,0.4)',
               }}
             >
-              <span className="text-electric-blue font-bold text-xs tracking-wider">PPF</span>
+              <span className="text-electric-blue font-bold text-lg">R</span>
             </div>
-            <span className="font-semibold text-white text-sm tracking-wide">PPF Monitor</span>
+            <span className="font-semibold text-white text-sm tracking-wide">RG Auto Studio</span>
           </div>
           <button
             onClick={onClose}

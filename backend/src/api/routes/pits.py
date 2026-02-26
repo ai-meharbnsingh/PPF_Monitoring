@@ -23,6 +23,7 @@ from src.models.pit import Pit
 from src.models.user import User
 from src.schemas.common import SuccessResponse
 from src.schemas.pit import PitCreate, PitResponse, PitSummary, PitUpdate
+from src.schemas.pit_alert_config import PitAlertConfigUpdate
 from src.utils.logger import get_logger
 
 router = APIRouter(prefix="/workshops/{workshop_id}/pits", tags=["pits"])
@@ -250,4 +251,113 @@ async def get_pit_by_id(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         
     return _pit_response(pit)
+
+
+# ─── Per-pit alert config: get (merged) ──────────────────────────────────────
+@root_router.get("/{pit_id}/alert-config")
+async def get_pit_alert_config(
+    pit_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_staff_or_above),
+):
+    """Get merged alert config for a pit (pit overrides + workshop defaults)."""
+    from src.utils.constants import UserRole
+    from src.models.alert import AlertConfig
+    from src.models.pit_alert_config import PitAlertConfig
+
+    pit = await db.get(Pit, pit_id)
+    if pit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pit not found")
+
+    if (
+        current_user.role != UserRole.SUPER_ADMIN.value
+        and current_user.workshop_id != pit.workshop_id
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Fetch both configs
+    ws_result = await db.execute(
+        select(AlertConfig).where(AlertConfig.workshop_id == pit.workshop_id)
+    )
+    ws_config = ws_result.scalar_one_or_none()
+
+    pit_result = await db.execute(
+        select(PitAlertConfig).where(PitAlertConfig.pit_id == pit_id)
+    )
+    pit_config = pit_result.scalar_one_or_none()
+
+    # Build merged response with source tracking
+    THRESHOLD_FIELDS = [
+        ("temp_min", 15.0),
+        ("temp_max", 35.0),
+        ("humidity_max", 70.0),
+        ("pm25_warning", 12.0),
+        ("pm25_critical", 35.4),
+        ("pm10_warning", 54.0),
+        ("pm10_critical", 154.0),
+        ("iaq_warning", 100.0),
+        ("iaq_critical", 150.0),
+        ("device_offline_threshold_seconds", 60),
+    ]
+
+    result = {"pit_id": pit_id}
+    for field, default in THRESHOLD_FIELDS:
+        pit_val = getattr(pit_config, field, None) if pit_config else None
+        ws_val = getattr(ws_config, field, None) if ws_config else None
+
+        if pit_val is not None:
+            result[field] = pit_val
+            result[f"{field}_source"] = "pit"
+        elif ws_val is not None:
+            result[field] = ws_val
+            result[f"{field}_source"] = "workshop"
+        else:
+            result[field] = default
+            result[f"{field}_source"] = "default"
+
+    return result
+
+
+# ─── Per-pit alert config: upsert ────────────────────────────────────────────
+@root_router.put("/{pit_id}/alert-config")
+async def update_pit_alert_config(
+    pit_id: int,
+    payload: PitAlertConfigUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_owner_or_admin),
+):
+    """Update per-pit alert threshold overrides. Null fields inherit from workshop."""
+    from src.utils.constants import UserRole
+    from src.models.pit_alert_config import PitAlertConfig
+
+    pit = await db.get(Pit, pit_id)
+    if pit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pit not found")
+
+    if (
+        current_user.role != UserRole.SUPER_ADMIN.value
+        and current_user.workshop_id != pit.workshop_id
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Fetch existing or create
+    result = await db.execute(
+        select(PitAlertConfig).where(PitAlertConfig.pit_id == pit_id)
+    )
+    pit_config = result.scalar_one_or_none()
+
+    if pit_config is None:
+        pit_config = PitAlertConfig(pit_id=pit_id)
+        db.add(pit_config)
+
+    # Apply all submitted fields (including explicit nulls to clear overrides)
+    update_data = payload.model_dump()
+    for field, value in update_data.items():
+        setattr(pit_config, field, value)
+
+    await db.commit()
+    await db.refresh(pit_config)
+
+    logger.info(f"Pit alert config updated: pit_id={pit_id} by user_id={current_user.id}")
+    return {"message": "Pit alert thresholds saved", "pit_id": pit_id}
 

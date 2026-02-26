@@ -75,6 +75,10 @@ frontend/playwright-report-integration/
 .pio/
 firmware/.pio/
 
+# ── Firmware uploads (binary storage, managed via Docker volume) ──
+firmware_uploads/
+backend/firmware_uploads/
+
 # ── Windows NUL device artifacts ─────────────────────────────
 nul
 firmware/nul
@@ -85,3 +89,4 @@ camera_setup/screenshots/
 rishab/
 rg-auto-studio-main.zip
 config.json
+.vercel

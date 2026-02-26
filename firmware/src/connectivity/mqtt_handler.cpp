@@ -7,6 +7,7 @@
  */
 
 #include "mqtt_handler.h"
+#include "ota/ota_manager.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Static callback bridge (PubSubClient requires a plain function)
@@ -54,6 +55,12 @@ void MQTTHandler::begin() {
     DEBUG_PRINTF("[MQTT]   Publish sensors → %s\n", _topicSensors);
     DEBUG_PRINTF("[MQTT]   Publish status  → %s\n", _topicStatus);
     DEBUG_PRINTF("[MQTT]   Subscribe cmd   ← %s\n", _topicCommand);
+
+    // Configure TLS for cloud brokers (HiveMQ Cloud requires TLS on 8883)
+#if MQTT_USE_TLS && !defined(USE_ETHERNET)
+    _wifiClient.setInsecure();  // Skip CA verification (accepts any valid TLS cert)
+    DEBUG_PRINTLN("[MQTT] TLS enabled (insecure mode — no CA pinning)");
+#endif
 
     _client.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
     _client.setKeepAlive(MQTT_KEEPALIVE_SEC);
@@ -221,8 +228,17 @@ void MQTTHandler::handleMessage(const char* topic,
 
     // ── UPDATE_FIRMWARE ──────────────────────────────────────────────────────
     else if (strcmp(command, "UPDATE_FIRMWARE") == 0) {
-        DEBUG_PRINTLN("[MQTT] Command: UPDATE_FIRMWARE — OTA not implemented in v1");
-        // TODO: implement OTA via ArduinoOTA or HTTPUpdate in a future version
+        const char* url = doc["url"];
+        if (url && strlen(url) > 0) {
+            DEBUG_PRINTF("[MQTT] Command: UPDATE_FIRMWARE → %s\n", url);
+            if (_otaManager) {
+                _otaManager->startRemoteUpdate(url);
+            } else {
+                DEBUG_PRINTLN("[MQTT] ERROR — OTA manager not attached");
+            }
+        } else {
+            DEBUG_PRINTLN("[MQTT] UPDATE_FIRMWARE missing 'url' field");
+        }
     }
 
     else {

@@ -37,6 +37,7 @@ export interface UserUpdate {
   last_name?: string
   email?: string
   phone?: string
+  is_active?: boolean
 }
 
 // ─── Admin reset password ─────────────────────────────────────────────────────

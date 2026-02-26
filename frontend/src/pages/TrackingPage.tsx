@@ -87,11 +87,11 @@ export default function TrackingPage() {
         <header className="px-6 py-5 border-b border-white/5 bg-black/20 backdrop-blur-sm">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center backdrop-blur-md" style={{ background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.3)', boxShadow: '0 0 10px rgba(0,240,255,0.2)' }}>
-                <span className="text-electric-blue font-bold tracking-wider text-xs">PPF</span>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center backdrop-blur-md" style={{ background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.3)', boxShadow: '0 0 10px rgba(0,240,255,0.2)' }}>
+                <span className="text-electric-blue font-bold text-sm">R</span>
               </div>
               <span className="font-semibold text-gray-200">
-                {job.workshop_name ?? 'Auto Studio'}
+                {job.workshop_name ?? 'RG Auto Studio'}
               </span>
             </div>
             <JobStatusBadge status={job.status} />

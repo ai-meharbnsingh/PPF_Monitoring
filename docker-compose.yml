@@ -106,11 +106,12 @@ services:
     environment:
       # Override host names to use Docker service names
       DATABASE_HOST: postgres
-      MQTT_BROKER_HOST: mosquitto
+      # MQTT_BROKER_HOST: mosquitto  # Local Mosquitto — disabled, using HiveMQ Cloud
       MEDIAMTX_HOST: localhost
     volumes:
       - ./backend:/app               # Hot-reload in development
       - backend_logs:/app/logs
+      - firmware_uploads:/app/firmware_uploads
     ports:
       - "8000:8000"
     depends_on:
@@ -164,6 +165,8 @@ volumes:
   mosquitto_logs:
     driver: local
   backend_logs:
+    driver: local
+  firmware_uploads:
     driver: local
 
 

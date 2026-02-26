@@ -20,6 +20,7 @@ from src.api.routes import (
     alerts,
     auth,
     devices,
+    firmware,
     health,
     jobs,
     pits,
@@ -137,6 +138,9 @@ app.include_router(streams.router, prefix=API)
 
 # Subscriptions
 app.include_router(subscriptions.router, prefix=API)
+
+# Firmware OTA management
+app.include_router(firmware.router, prefix=API)
 
 # Admin utilities
 app.include_router(admin.router, prefix=API)

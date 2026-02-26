@@ -31,8 +31,9 @@ import src.models.sensor_data     # noqa: F401
 import src.models.job             # noqa: F401
 import src.models.alert           # noqa: F401
 import src.models.subscription    # noqa: F401
-import src.models.device_command  # noqa: F401
-import src.models.audit_log       # noqa: F401
+import src.models.device_command    # noqa: F401
+import src.models.audit_log         # noqa: F401
+import src.models.firmware_release  # noqa: F401
 
 # ─── Alembic Config ───────────────────────────────────────────────────────────
 config = context.config

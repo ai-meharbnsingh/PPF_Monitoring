@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from src.models.job import Job
     from src.models.sensor_data import SensorData
     from src.models.alert import Alert
+    from src.models.pit_alert_config import PitAlertConfig
 
 
 class Pit(Base, TimestampMixin):
@@ -61,6 +62,9 @@ class Pit(Base, TimestampMixin):
         "SensorData", back_populates="pit"
     )
     alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="pit")
+    alert_config: Mapped[Optional["PitAlertConfig"]] = relationship(
+        "PitAlertConfig", back_populates="pit", uselist=False, lazy="selectin"
+    )
 
     @property
     def display_name(self) -> str:

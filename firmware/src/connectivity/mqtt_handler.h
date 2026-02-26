@@ -16,7 +16,7 @@
  *   ENABLE         — Resume publishing sensor data
  *   RESTART        — Reboot the ESP32
  *   SET_INTERVAL   — Change REPORT_INTERVAL_MS (payload: {"interval_ms": N})
- *   UPDATE_FIRMWARE — Log notice (OTA not implemented in v1)
+ *   UPDATE_FIRMWARE — Trigger remote OTA via URL (payload: {"url": "http://..."})
  *
  * Author: PPF Monitoring Team
  * Created: 2026-02-22
@@ -29,10 +29,17 @@
 #include <ArduinoJson.h>
 #include "config.h"
 
+// Forward declaration — avoids circular include
+class OTAManager;
+
 #ifdef USE_ETHERNET
   #include <ETH.h>
 #else
   #include <WiFi.h>
+#endif
+
+#if MQTT_USE_TLS
+  #include <WiFiClientSecure.h>
 #endif
 
 
@@ -79,12 +86,20 @@ public:
     /** Expose underlying client for main loop's client.loop() call */
     PubSubClient& client() { return _client; }
 
+    /** Attach OTA manager for UPDATE_FIRMWARE command handling */
+    void setOTAManager(OTAManager* ota) { _otaManager = ota; }
+
 private:
+    OTAManager* _otaManager = nullptr;
 #ifdef USE_ETHERNET
     WiFiClient      _ethClient;
     PubSubClient    _client;
 #else
-    WiFiClient      _wifiClient;
+  #if MQTT_USE_TLS
+    WiFiClientSecure _wifiClient;
+  #else
+    WiFiClient       _wifiClient;
+  #endif
     PubSubClient    _client;
 #endif
 

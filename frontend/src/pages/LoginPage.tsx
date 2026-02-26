@@ -55,16 +55,16 @@ export default function LoginPage() {
         {/* Logo & title */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
             style={{
               background: 'rgba(0,240,255,0.12)',
               border: '1px solid rgba(0,240,255,0.4)',
               boxShadow: '0 0 30px rgba(0,240,255,0.15)',
             }}
           >
-            <span className="text-electric-blue font-bold text-xl tracking-wider">PPF</span>
+            <span className="text-electric-blue font-bold text-2xl">R</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-wide">PPF Monitor</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wide">RG Auto Studio</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-gray-600 mt-6 tracking-wide">
-          PPF Workshop Monitoring System
+          RG Auto Studio Monitoring System
         </p>
       </div>
     </div>
