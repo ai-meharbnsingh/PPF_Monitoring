@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     Home, Eye, X, ScanSearch, ArrowRight, CalendarCheck, LogIn,
     AlertTriangle, MapPin, Phone, Mail, Instagram, Layers,
-    ShieldCheck, MessageSquare,
+    ShieldCheck, MessageSquare, Menu,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -31,6 +31,7 @@ export default function PublicSplashPage() {
     const navigate = useNavigate()
     const { login, isLoading, error, isAuthenticated, user } = useAuth()
 
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [showTokenModal, setShowTokenModal] = useState(false)
     const [showLoginModal, setShowLoginModal] = useState(false)
     const [showConsultModal, setShowConsultModal] = useState(false)
@@ -114,24 +115,57 @@ export default function PublicSplashPage() {
                         </button>
                     </div>
 
-                    {/* Mobile nav */}
-                    <div className="flex md:hidden items-center gap-4">
-                        <button
-                            onClick={() => setShowTokenModal(true)}
-                            className="flex items-center gap-1 text-gray-300 text-sm font-medium"
+                    {/* Mobile hamburger */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {/* Mobile dropdown menu */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden border-t border-white/10 bg-matte-black/95 backdrop-blur-md px-4 py-3 space-y-1">
+                        <a
+                            href="#top"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
                         >
-                            <Eye className="w-3.5 h-3.5" />
-                            LIVE BAY
+                            <Home className="w-4 h-4" />
+                            Home
+                        </a>
+                        <button
+                            onClick={() => { setShowConsultModal(true); setMobileMenuOpen(false) }}
+                            className="w-full flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Book Consultation
+                        </button>
+                        <a
+                            href="#book"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
+                        >
+                            <CalendarCheck className="w-4 h-4" />
+                            Book Service
+                        </a>
+                        <button
+                            onClick={() => { setShowTokenModal(true); setMobileMenuOpen(false) }}
+                            className="w-full flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
+                        >
+                            <Eye className="w-4 h-4" />
+                            Live Bay
                         </button>
                         <button
-                            onClick={() => setShowLoginModal(true)}
-                            className="flex items-center gap-1 text-gray-300 text-sm font-medium"
+                            onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false) }}
+                            className="w-full flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
                         >
-                            <LogIn className="w-3.5 h-3.5" />
-                            LOGIN
+                            <LogIn className="w-4 h-4" />
+                            Login
                         </button>
                     </div>
-                </div>
+                )}
             </nav>
 
             {/* ═══════════ HERO SECTION ═══════════ */}
