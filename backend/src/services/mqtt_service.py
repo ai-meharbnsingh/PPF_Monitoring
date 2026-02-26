@@ -17,7 +17,9 @@ Created: 2026-02-21
 
 import asyncio
 import json
+import os
 import ssl
+import uuid
 from typing import TYPE_CHECKING, Optional
 
 import paho.mqtt.client as mqtt
@@ -279,7 +281,8 @@ def setup_mqtt(loop: asyncio.AbstractEventLoop) -> None:
     global _mqtt_client, _event_loop
     _event_loop = loop
 
-    client = mqtt.Client(client_id="ppf_backend_subscriber", clean_session=True)
+    unique_id = f"ppf_backend_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+    client = mqtt.Client(client_id=unique_id, clean_session=True)
     client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_PASSWORD)
 
     # Enable TLS for cloud MQTT brokers (e.g., HiveMQ Cloud on port 8883)
