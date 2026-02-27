@@ -187,6 +187,66 @@ bool PayloadBuilder::buildBME688WithFallback(const BME680Reading& bme,
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BME688 + PMS5003 payload (full sensor suite)
+// ─────────────────────────────────────────────────────────────────────────────
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+
+bool PayloadBuilder::buildBME688PMS5003(const BME680Reading&  bme,
+                                         const PMS5003Reading& pms,
+                                         const char*           timestamp,
+                                         char*                 buf,
+                                         size_t                len)
+{
+    // 512 bytes for combined BME688 + PMS5003 payload
+    StaticJsonDocument<512> doc;
+
+    // ── Identity ──────────────────────────────────────────────────────────
+    doc["device_id"]   = DEVICE_ID;
+    doc["license_key"] = LICENSE_KEY;
+    doc["sensor_type"] = "BME688+PMS5003";
+
+    // ── BME688 fields (included if valid) ────────────────────────────────
+    if (bme.valid) {
+        doc["temperature"]    = serialized(String(bme.temperature,    1));
+        doc["humidity"]       = serialized(String(bme.humidity,       1));
+        doc["pressure"]       = serialized(String(bme.pressure,       1));
+        doc["gas_resistance"] = serialized(String(bme.gas_resistance, 0));
+        doc["iaq"]            = serialized(String(bme.iaq,            1));
+        doc["iaq_accuracy"]   = bme.iaq_accuracy;
+    }
+
+    // ── PMS5003 fields (included if valid) ───────────────────────────────
+    if (pms.valid) {
+        doc["pm1"]  = serialized(String((float)pms.pm1,  1));
+        doc["pm25"] = serialized(String((float)pms.pm25, 1));
+        doc["pm10"] = serialized(String((float)pms.pm10, 1));
+
+        doc["particles_03um"]  = pms.particles_03um;
+        doc["particles_05um"]  = pms.particles_05um;
+        doc["particles_10um"]  = pms.particles_10um;
+        doc["particles_25um"]  = pms.particles_25um;
+        doc["particles_50um"]  = pms.particles_50um;
+        doc["particles_100um"] = pms.particles_100um;
+    }
+
+    // ── Timestamp ─────────────────────────────────────────────────────────
+    doc["timestamp"] = timestamp;
+
+    size_t written = serializeJson(doc, buf, len);
+    if (written == 0 || written >= len) {
+        DEBUG_PRINTLN("[PAYLOAD] ERROR — BME688+PMS5003 serialization failed (buffer too small?)");
+        return false;
+    }
+
+    DEBUG_PRINTF("[PAYLOAD] BME688+PMS5003 JSON (%d bytes, bme=%s pms=%s): %s\n",
+                 written, bme.valid ? "OK" : "FAIL", pms.valid ? "OK" : "FAIL", buf);
+    return true;
+}
+
+#endif  // SENSOR_CONFIG_BME688_PMS5003
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Status heartbeat payload
 // ─────────────────────────────────────────────────────────────────────────────
 bool PayloadBuilder::buildStatus(const char* ipAddress,

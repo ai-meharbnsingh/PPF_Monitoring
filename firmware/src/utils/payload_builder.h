@@ -79,6 +79,11 @@
   #include "sensors/dht22.h"
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+  #include "sensors/bme680.h"
+  #include "sensors/pms5003.h"
+#endif
+
 
 // ─── Payload Builder ──────────────────────────────────────────────────────────
 class PayloadBuilder {
@@ -135,6 +140,20 @@ public:
                                          const char*          timestamp,
                                          char*                buf,
                                          size_t               len);
+#endif
+
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+    /**
+     * Build BME688 + PMS5003 JSON payload.
+     * Includes env data (temp, humidity, pressure, gas, IAQ) from BME688
+     * and particulate matter (PM1, PM2.5, PM10, particle counts) from PMS5003.
+     * Either sensor's data is included if valid (partial reads OK).
+     */
+    static bool buildBME688PMS5003(const BME680Reading&  bme,
+                                    const PMS5003Reading& pms,
+                                    const char*           timestamp,
+                                    char*                 buf,
+                                    size_t                len);
 #endif
 
     /**

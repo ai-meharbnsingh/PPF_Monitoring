@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-#if defined(SENSOR_CONFIG_BME680) || defined(SENSOR_CONFIG_BME688_DHT_FALLBACK)
+#if defined(SENSOR_CONFIG_BME680) || defined(SENSOR_CONFIG_BME688_DHT_FALLBACK) || defined(SENSOR_CONFIG_BME688_PMS5003)
 
 #include "bme680.h"
 

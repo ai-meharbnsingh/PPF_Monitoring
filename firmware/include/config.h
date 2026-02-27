@@ -17,11 +17,14 @@
 
 // ─── SENSOR HARDWARE SELECTION ───────────────────────────────────────────────
 // Set via platformio.ini build_flags:
+//   -DSENSOR_BME688_PMS5003      → BME688 (env) + PMS5003 (dust) — production
 //   -DSENSOR_BME688_DHT_FALLBACK → BME688 primary + DHT11 fallback
 //   -DSENSOR_DHT22_ONLY          → DHT11 only (no PMS5003 warmup — testing)
 //   (default)                    → DHT22 + PMS5003 (production kit)
 
-#ifdef SENSOR_BME688_DHT_FALLBACK
+#ifdef SENSOR_BME688_PMS5003
+  #define SENSOR_CONFIG_BME688_PMS5003         // BME688 + PMS5003 (full sensor suite)
+#elif defined(SENSOR_BME688_DHT_FALLBACK)
   #define SENSOR_CONFIG_BME688_DHT_FALLBACK   // BME688 primary, DHT11 fallback
 #elif defined(SENSOR_DHT22_ONLY)
   #define SENSOR_CONFIG_DHT22                  // DHT11 only — no PMS5003
@@ -106,7 +109,7 @@
 //
 // SAFE GPIO for sensors:
 #define PIN_DHT22           5     // DHT22 DATA → GPIO5 (testing PCB) — change to 4 on final kit
-#define PIN_PMS5003_RX      32    // PMS5003 TX → GPIO32 (ESP32 receives)
+#define PIN_PMS5003_RX      5     // PMS5003 TX → GPIO5  (ESP32 receives)
 #define PIN_PMS5003_TX      33    // PMS5003 RX → GPIO33 (ESP32 transmits)
 #define PIN_STATUS_LED      2     // On-board blue LED (GPIO2)
 

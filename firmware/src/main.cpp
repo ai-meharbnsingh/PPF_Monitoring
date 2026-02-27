@@ -57,6 +57,11 @@
   #include "sensors/dht22.h"
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+  #include "sensors/bme680.h"
+  #include "sensors/pms5003.h"
+#endif
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global objects
@@ -85,12 +90,17 @@ OTAManager  ota;
   static bool  _bmeAvailable = false;
 #endif
 
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+  BME680Sensor  bmeSensor(PIN_I2C_SDA, PIN_I2C_SCL, BME680_I2C_ADDR);
+  PMS5003Sensor pmsSensor(PIN_PMS5003_RX, PIN_PMS5003_TX);
+#endif
+
 // ─── Timing ───────────────────────────────────────────────────────────────────
 static uint32_t _lastSensorPublishMs  = 0;
 static uint32_t _lastStatusPublishMs  = 0;
 
 // ─── JSON payload buffers ────────────────────────────────────────────────────
-static char _sensorBuf[512];
+static char _sensorBuf[640];
 static char _statusBuf[256];
 static char _tsBuf[24];   // "2026-02-22T10:30:00Z\0" = 21 bytes
 
@@ -130,6 +140,9 @@ static void printBanner() {
 #endif
 #ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
     DEBUG_PRINTLN("║  Sensors:   BME688 + DHT11 fallback          ║");
+#endif
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+    DEBUG_PRINTLN("║  Sensors:   BME688 + PMS5003                  ║");
 #endif
     DEBUG_PRINTF( "║  Network:   %-32s║\n", NetManager::interfaceType());
     DEBUG_PRINTLN("╚══════════════════════════════════════════════╝");
@@ -184,6 +197,16 @@ void setup() {
     }
     // Always init DHT11 as fallback
     dhtSensor.begin();
+#endif
+
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+    if (!bmeSensor.begin()) {
+        DEBUG_PRINTLN("[MAIN] WARNING — BME688 not found on I2C");
+        blinkLed(5, 300);
+    } else {
+        DEBUG_PRINTLN("[MAIN] BME688 initialized — I2C OK");
+    }
+    pmsSensor.begin();   // includes 30 s warmup
 #endif
 
     // ── Network ───────────────────────────────────────────────────────────
@@ -320,6 +343,28 @@ void loop() {
         }
 
 #endif  // SENSOR_CONFIG_BME680
+
+#ifdef SENSOR_CONFIG_BME688_PMS5003
+
+        BME680Reading  bmeData = bmeSensor.read();
+        PMS5003Reading pmsData = pmsSensor.read();
+
+        if (!bmeData.valid && !pmsData.valid) {
+            DEBUG_PRINTLN("[MAIN] Both BME688 and PMS5003 read failed");
+            blinkLed(4, 80);
+        } else {
+            if (PayloadBuilder::buildBME688PMS5003(bmeData, pmsData,
+                                                    _tsBuf, _sensorBuf,
+                                                    sizeof(_sensorBuf))) {
+                if (mqtt.publishSensorData(_sensorBuf)) {
+                    digitalWrite(PIN_STATUS_LED, HIGH);
+                    delay(50);
+                    digitalWrite(PIN_STATUS_LED, LOW);
+                }
+            }
+        }
+
+#endif  // SENSOR_CONFIG_BME688_PMS5003
 
 #ifdef SENSOR_CONFIG_BME688_DHT_FALLBACK
 

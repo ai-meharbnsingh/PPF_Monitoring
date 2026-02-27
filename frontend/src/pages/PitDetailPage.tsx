@@ -320,6 +320,13 @@ export default function PitDetailPage() {
                 value={sensors?.pm10 ?? null}
                 status={sensors?.pm10_status ?? 'unknown'}
               />
+              {sensors?.pm1 != null && (
+                <SensorTile
+                  metric="pm1"
+                  value={sensors.pm1}
+                  status={sensors?.pm25_status ?? 'unknown'}
+                />
+              )}
               {sensors?.pressure != null && (
                 <SensorTile
                   metric="pressure"
@@ -425,18 +432,38 @@ export default function PitDetailPage() {
                   </div>
                 </div>
 
-                {/* PM 2.5 — only when sensor is reporting */}
+                {/* PM2.5 */}
                 {sensors?.pm25 != null && (
                   <div className={overlayCard} style={overlayCardStyle}>
-                    <div className="p-1.5 rounded-lg bg-emerald-500/10 shrink-0">
-                      <Wind className="h-4 w-4 text-emerald-400" />
+                    <div className="p-1.5 rounded-lg bg-orange-500/10 shrink-0">
+                      <Wind className="h-4 w-4 text-orange-400" />
                     </div>
                     <div>
                       <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
-                        Air Quality
+                        PM2.5
                       </p>
                       <p className="text-sm font-mono font-bold text-white leading-none">
                         {sensors.pm25.toFixed(1)}{' '}
+                        <span className="text-[9px] text-gray-500 font-normal">
+                          μg/m³
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* PM10 */}
+                {sensors?.pm10 != null && (
+                  <div className={overlayCard} style={overlayCardStyle}>
+                    <div className="p-1.5 rounded-lg bg-purple-500/10 shrink-0">
+                      <Wind className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
+                        PM10
+                      </p>
+                      <p className="text-sm font-mono font-bold text-white leading-none">
+                        {sensors.pm10.toFixed(1)}{' '}
                         <span className="text-[9px] text-gray-500 font-normal">
                           μg/m³
                         </span>
