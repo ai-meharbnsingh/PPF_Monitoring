@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Wifi, WifiOff, Terminal, Power, RotateCcw } from 'lucide-react'
+import { Wifi, WifiOff, Terminal } from 'lucide-react'
 import type { DeviceResponse } from '@/types/device'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'

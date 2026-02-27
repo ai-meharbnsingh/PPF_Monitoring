@@ -26,7 +26,7 @@ const STATUS_TABS: { value: JobStatus | 'all'; label: string }[] = [
 export default function JobsPage() {
   const dispatch = useAppDispatch()
   const workshopId = useAppSelector((s) => s.auth.user?.workshop_id)
-  const { items, pagination, isLoading, filters } = useAppSelector((s) => s.jobs)
+  const { items, pagination, isLoading } = useAppSelector((s) => s.jobs)
   const { page, pageSize, nextPage, prevPage, goToPage } = usePagination(1, 20)
   const [createOpen, setCreateOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<JobStatus | 'all'>('all')

@@ -4,7 +4,7 @@ import { setPits, setSensorSummaries, setPitsLoading, setPitsError } from '@/sto
 import { pitsApi } from '@/api/pits'
 import { sensorsApi } from '@/api/sensors'
 import { SensorCard } from '@/components/sensors/SensorCard'
-import { PageSpinner, Skeleton } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LayoutDashboard, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'

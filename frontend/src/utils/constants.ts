@@ -1,4 +1,4 @@
-import type { SensorStatus } from './common'
+import type { SensorStatus } from '@/types/common'
 
 // ─── Sensor display units ─────────────────────────────────────────────────────
 

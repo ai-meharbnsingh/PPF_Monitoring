@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Outlet, Navigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { workshopsApi, CreateWorkshopPayload } from '@/api/workshops'
