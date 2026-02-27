@@ -16,6 +16,7 @@ Created: 2026-02-21
 """
 
 import os
+import ssl as _ssl
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -50,6 +51,16 @@ def _get_engine():
                 "pool_timeout":   30,
                 "pool_recycle":   3600,
             })
+        # Cloud PostgreSQL (Render, Railway, etc.) requires SSL.
+        # Detect cloud by checking if DATABASE_URL env var was provided
+        # (local dev constructs URL from components instead).
+        if not db_url.startswith("sqlite") and settings.DATABASE_URL_OVERRIDE:
+            ssl_ctx = _ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = _ssl.CERT_NONE
+            kwargs["connect_args"] = {"ssl": ssl_ctx}
+            logger.info("Database SSL enabled for cloud connection")
+
         _engine = create_async_engine(db_url, **kwargs)
     return _engine
 
