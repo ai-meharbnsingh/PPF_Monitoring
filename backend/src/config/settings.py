@@ -92,16 +92,26 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         """
         Async database URL.
-        If DATABASE_URL env var is set (Railway), use it directly (with asyncpg driver).
+        If DATABASE_URL env var is set (cloud), use it directly (with asyncpg driver).
         Otherwise, construct from individual components.
         """
         if self.DATABASE_URL_OVERRIDE:
             url = self.DATABASE_URL_OVERRIDE
-            # Railway gives postgresql:// — swap to asyncpg driver
+            # Cloud providers give postgresql:// — swap to asyncpg driver
             if url.startswith("postgresql://"):
                 url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
             elif url.startswith("postgres://"):
                 url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            # Strip query params that asyncpg handles via connect_args, not URL
+            # (sslmode → ssl connect_arg, channel_binding not supported by asyncpg)
+            if "?" in url:
+                base, query = url.split("?", 1)
+                from urllib.parse import parse_qs, urlencode
+                params = parse_qs(query)
+                params.pop("sslmode", None)
+                params.pop("channel_binding", None)
+                remaining = urlencode(params, doseq=True)
+                url = f"{base}?{remaining}" if remaining else base
             return url
         return (
             f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"

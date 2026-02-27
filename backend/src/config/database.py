@@ -51,22 +51,14 @@ def _get_engine():
                 "pool_timeout":   30,
                 "pool_recycle":   3600,
             })
-        # Cloud PostgreSQL (Render, Railway, etc.) requires SSL.
+        # Cloud PostgreSQL (Neon, Render, Railway, etc.) requires SSL.
         # Detect cloud by checking if DATABASE_URL env var was provided
         # (local dev constructs URL from components instead).
         if not db_url.startswith("sqlite") and settings.DATABASE_URL_OVERRIDE:
-            ssl_ctx = _ssl.SSLContext(_ssl.PROTOCOL_TLS_CLIENT)
+            ssl_ctx = _ssl.create_default_context()
             ssl_ctx.check_hostname = False
             ssl_ctx.verify_mode = _ssl.CERT_NONE
             kwargs["connect_args"] = {"ssl": ssl_ctx}
-
-        # Log masked DB URL for debugging
-        if settings.DATABASE_URL_OVERRIDE:
-            from urllib.parse import urlparse
-            raw = settings.DATABASE_URL_OVERRIDE
-            parsed = urlparse(raw)
-            logger.info(f"DB host={parsed.hostname}  port={parsed.port}  db={parsed.path}  query={parsed.query}")
-            logger.info(f"SSL in connect_args: {type(kwargs.get('connect_args', {}).get('ssl'))}")
 
         _engine = create_async_engine(db_url, **kwargs)
     return _engine
