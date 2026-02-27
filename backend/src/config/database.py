@@ -55,8 +55,17 @@ def _get_engine():
         # Detect cloud by checking if DATABASE_URL env var was provided
         # (local dev constructs URL from components instead).
         if not db_url.startswith("sqlite") and settings.DATABASE_URL_OVERRIDE:
-            kwargs["connect_args"] = {"ssl": True}
-            logger.info("Database SSL enabled for cloud connection")
+            ssl_ctx = _ssl.SSLContext(_ssl.PROTOCOL_TLS_CLIENT)
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = _ssl.CERT_NONE
+            kwargs["connect_args"] = {"ssl": ssl_ctx}
+
+        # Log masked DB URL for debugging
+        if settings.DATABASE_URL_OVERRIDE:
+            masked = settings.DATABASE_URL_OVERRIDE[:30] + "..." if len(settings.DATABASE_URL_OVERRIDE) > 30 else settings.DATABASE_URL_OVERRIDE
+            logger.info(f"DB URL override present: {masked}")
+            logger.info(f"Resolved async URL prefix: {db_url[:50]}...")
+            logger.info(f"SSL context in connect_args: {bool(kwargs.get('connect_args', {}).get('ssl'))}")
 
         _engine = create_async_engine(db_url, **kwargs)
     return _engine
