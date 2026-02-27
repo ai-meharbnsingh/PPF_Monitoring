@@ -62,10 +62,11 @@ def _get_engine():
 
         # Log masked DB URL for debugging
         if settings.DATABASE_URL_OVERRIDE:
-            masked = settings.DATABASE_URL_OVERRIDE[:30] + "..." if len(settings.DATABASE_URL_OVERRIDE) > 30 else settings.DATABASE_URL_OVERRIDE
-            logger.info(f"DB URL override present: {masked}")
-            logger.info(f"Resolved async URL prefix: {db_url[:50]}...")
-            logger.info(f"SSL context in connect_args: {bool(kwargs.get('connect_args', {}).get('ssl'))}")
+            from urllib.parse import urlparse
+            raw = settings.DATABASE_URL_OVERRIDE
+            parsed = urlparse(raw)
+            logger.info(f"DB host={parsed.hostname}  port={parsed.port}  db={parsed.path}  query={parsed.query}")
+            logger.info(f"SSL in connect_args: {type(kwargs.get('connect_args', {}).get('ssl'))}")
 
         _engine = create_async_engine(db_url, **kwargs)
     return _engine
