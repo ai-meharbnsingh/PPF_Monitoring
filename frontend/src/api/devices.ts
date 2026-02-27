@@ -48,4 +48,19 @@ export const devicesApi = {
     )
     return resp.data
   },
+
+  listPending: async (): Promise<DeviceResponse[]> => {
+    const { data } = await apiClient.get('/devices/pending')
+    return data
+  },
+
+  approve: async (deviceId: string, workshopId: number): Promise<any> => {
+    const { data } = await apiClient.post(`/devices/${deviceId}/approve`, { workshop_id: workshopId })
+    return data
+  },
+
+  assign: async (deviceId: string, workshopId: number, pitId: number): Promise<any> => {
+    const { data } = await apiClient.put(`/devices/${deviceId}/assign`, { workshop_id: workshopId, pit_id: pitId })
+    return data
+  },
 }

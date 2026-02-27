@@ -7,6 +7,7 @@
  */
 
 #include "payload_builder.h"
+#include "utils/device_config.h"
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,8 +25,8 @@ bool PayloadBuilder::buildDHT22PMS5003(const DHT22Reading&  dht,
     StaticJsonDocument<384> doc;
 
     // ── Identity ──────────────────────────────────────────────────────────
-    doc["device_id"]   = DEVICE_ID;
-    doc["license_key"] = LICENSE_KEY;
+    doc["device_id"]   = deviceConfig.getDeviceId();
+    doc["license_key"] = deviceConfig.getLicenseKey();
     doc["sensor_type"] = "DHT22+PMS5003";
 
     // ── DHT22 fields ──────────────────────────────────────────────────────
@@ -75,8 +76,8 @@ bool PayloadBuilder::buildDHT22Only(const DHT22Reading& dht,
 {
     StaticJsonDocument<192> doc;
 
-    doc["device_id"]   = DEVICE_ID;
-    doc["license_key"] = LICENSE_KEY;
+    doc["device_id"]   = deviceConfig.getDeviceId();
+    doc["license_key"] = deviceConfig.getLicenseKey();
     doc["sensor_type"] = "DHT11";   // Confirmed DHT11 by auto-detect test (5/5 valid, DHT22 0/5)
     doc["temperature"] = serialized(String(dht.temperature, 1));
     doc["humidity"]    = serialized(String(dht.humidity,    1));
@@ -108,8 +109,8 @@ bool PayloadBuilder::buildBME680(const BME680Reading& bme,
     StaticJsonDocument<256> doc;
 
     // ── Identity ──────────────────────────────────────────────────────────
-    doc["device_id"]   = DEVICE_ID;
-    doc["license_key"] = LICENSE_KEY;
+    doc["device_id"]   = deviceConfig.getDeviceId();
+    doc["license_key"] = deviceConfig.getLicenseKey();
     doc["sensor_type"] = "BME680";
 
     // ── BME680 fields ─────────────────────────────────────────────────────
@@ -150,8 +151,8 @@ bool PayloadBuilder::buildBME688WithFallback(const BME680Reading& bme,
 {
     StaticJsonDocument<320> doc;
 
-    doc["device_id"]   = DEVICE_ID;
-    doc["license_key"] = LICENSE_KEY;
+    doc["device_id"]   = deviceConfig.getDeviceId();
+    doc["license_key"] = deviceConfig.getLicenseKey();
     doc["sensor_type"] = "BME688";
 
     if (!bmeFailed) {
@@ -201,8 +202,8 @@ bool PayloadBuilder::buildBME688PMS5003(const BME680Reading&  bme,
     StaticJsonDocument<512> doc;
 
     // ── Identity ──────────────────────────────────────────────────────────
-    doc["device_id"]   = DEVICE_ID;
-    doc["license_key"] = LICENSE_KEY;
+    doc["device_id"]   = deviceConfig.getDeviceId();
+    doc["license_key"] = deviceConfig.getLicenseKey();
     doc["sensor_type"] = "BME688+PMS5003";
 
     // ── BME688 fields (included if valid) ────────────────────────────────
@@ -258,7 +259,7 @@ bool PayloadBuilder::buildStatus(const char* ipAddress,
 {
     StaticJsonDocument<256> doc;
 
-    doc["device_id"]   = DEVICE_ID;
+    doc["device_id"]   = deviceConfig.getDeviceId();
     doc["status"]      = isDisabled ? "disabled" : "online";
     doc["fw_version"]  = FIRMWARE_VER;
     doc["ip"]          = ipAddress;

@@ -65,6 +65,7 @@ class PitStatus(str, Enum):
 
 # ─── Device Status ────────────────────────────────────────────────────────────
 class DeviceStatus(str, Enum):
+    PENDING = "pending"
     ACTIVE = "active"
     DISABLED = "disabled"
     SUSPENDED = "suspended"
@@ -157,6 +158,10 @@ MQTT_TOPIC_DEVICE_STATUS = "workshop/{workshop_id}/device/{device_id}/status"
 # Wildcard subscription patterns
 MQTT_SUBSCRIBE_SENSOR_DATA = "workshop/+/pit/+/sensors"
 MQTT_SUBSCRIBE_DEVICE_STATUS = "workshop/+/device/+/status"
+
+# Provisioning topics
+MQTT_SUBSCRIBE_PROVISIONING = "provisioning/announce"
+MQTT_TOPIC_PROVISIONING_CONFIG = "provisioning/{device_id}/config"
 
 
 # ─── WebSocket Event Types ────────────────────────────────────────────────────

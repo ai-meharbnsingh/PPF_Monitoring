@@ -8,6 +8,7 @@
 
 #include "ota_manager.h"
 #include <ArduinoJson.h>
+#include "utils/device_config.h"
 
 // HTML for the browser upload page (served at http://<ip>:8080)
 static const char OTA_UPLOAD_HTML[] PROGMEM = R"rawliteral(
@@ -78,7 +79,7 @@ void OTAManager::begin(PubSubClient* mqttClient) {
 
     // Build OTA status topic
     snprintf(_otaStatusTopic, sizeof(_otaStatusTopic),
-             "workshop/%d/pit/%d/ota/status", WORKSHOP_ID, PIT_ID);
+             "workshop/%d/pit/%d/ota/status", deviceConfig.getWorkshopId(), deviceConfig.getPitId());
 
     DEBUG_PRINTLN("[OTA] Initialising OTA Manager…");
     DEBUG_PRINTF("[OTA]   Status topic → %s\n", _otaStatusTopic);
@@ -199,7 +200,7 @@ void OTAManager::_setupWebUpload() {
 // ─── _handleWebRoot() ──────────────────────────────────────────────────────
 void OTAManager::_handleWebRoot() {
     String html = FPSTR(OTA_UPLOAD_HTML);
-    html.replace("%DEVICE_ID%", DEVICE_ID);
+    html.replace("%DEVICE_ID%", deviceConfig.getDeviceId());
     html.replace("%FW_VERSION%", FIRMWARE_VER);
     html.replace("%FREE_HEAP%", String(ESP.getFreeHeap()));
     _webServer.send(200, "text/html", html);
@@ -270,7 +271,7 @@ void OTAManager::_publishOtaStatus(const char* state, int progress, const char* 
     if (!_mqtt || !_mqtt->connected()) return;
 
     StaticJsonDocument<200> doc;
-    doc["device_id"] = DEVICE_ID;
+    doc["device_id"] = deviceConfig.getDeviceId();
     doc["state"]     = state;
     doc["progress"]  = progress;
     doc["version"]   = version;

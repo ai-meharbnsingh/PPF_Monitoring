@@ -6,27 +6,15 @@
  * Sensors:  DHT22 (temperature + humidity) + PMS5003 (particulate matter)
  *           OR BME680 (temperature + humidity + pressure + IAQ)
  *
- * Flow:
- *   setup():
- *     1. Serial debug output
- *     2. Configure hardware watchdog
- *     3. Initialise sensors
- *     4. Connect to Ethernet / WiFi
- *     5. Sync NTP time
- *     6. Connect to MQTT broker
- *     7. Toggle status LED to signal ready
- *
- *   loop():
- *     1. Feed watchdog
- *     2. Ensure network is up
- *     3. Ensure MQTT is connected; call client.loop()
- *     4. Sync NTP
- *     5. Every REPORT_INTERVAL_MS: read sensors → build JSON → publish
- *     6. Every STATUS_PUBLISH_MS:  build status JSON → publish
+ * Boot Flow:
+ *   1. Initialise hardware (Serial, LED, watchdog, sensors, network, NTP)
+ *   2. Load NVS config (device_config)
+ *   3. If NOT provisioned → PROVISIONING MODE (announce via MQTT, wait for license)
+ *   4. If provisioned → NORMAL MODE (sensor loop, MQTT publish, OTA)
  *
  * Author: PPF Monitoring Team
  * Created: 2026-02-22
- * Version: 1.1.0
+ * Version: 2.0.0
  */
 
 #include <Arduino.h>
@@ -38,6 +26,7 @@
 #include "ota/ota_manager.h"
 #include "utils/ntp_sync.h"
 #include "utils/payload_builder.h"
+#include "utils/device_config.h"
 
 #ifdef SENSOR_CONFIG_DHT22_PMS5003
   #include "sensors/dht22.h"
@@ -126,9 +115,14 @@ static void printBanner() {
     DEBUG_PRINTLN("║  PPF Workshop Monitoring System              ║");
     DEBUG_PRINTF( "║  Firmware v%-34s║\n", FIRMWARE_VER);
     DEBUG_PRINTLN("╠══════════════════════════════════════════════╣");
-    DEBUG_PRINTF( "║  Device:    %-32s║\n", DEVICE_ID);
-    DEBUG_PRINTF( "║  Workshop:  %-32d║\n", WORKSHOP_ID);
-    DEBUG_PRINTF( "║  Pit:       %-32d║\n", PIT_ID);
+    DEBUG_PRINTF( "║  Device:    %-32s║\n", deviceConfig.getDeviceId());
+    DEBUG_PRINTF( "║  MAC:       %-32s║\n", deviceConfig.getMacAddress());
+    if (deviceConfig.isProvisioned()) {
+        DEBUG_PRINTF( "║  Workshop:  %-32d║\n", deviceConfig.getWorkshopId());
+        DEBUG_PRINTF( "║  Pit:       %-32d║\n", deviceConfig.getPitId());
+    } else {
+        DEBUG_PRINTLN("║  Status:    AWAITING PROVISIONING            ║");
+    }
 #ifdef SENSOR_CONFIG_DHT22_PMS5003
     DEBUG_PRINTLN("║  Sensors:   DHT22 + PMS5003                  ║");
 #endif
@@ -151,12 +145,75 @@ static void printBanner() {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Provisioning Mode
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Enter the provisioning loop. Blocks until admin approves and sends config.
+ * The PROVISION command handler in mqtt_handler.cpp saves to NVS and reboots.
+ */
+static void enterProvisioningLoop() {
+    DEBUG_PRINTLN();
+    DEBUG_PRINTLN("═══════════════════════════════════════════════");
+    DEBUG_PRINTLN("  PROVISIONING MODE — No license key in NVS");
+    DEBUG_PRINTLN("  Waiting for admin approval via MQTT…");
+    DEBUG_PRINTLN("═══════════════════════════════════════════════");
+    DEBUG_PRINTLN();
+
+    mqtt.ensureConnected();
+
+    uint32_t lastAnnounce = 0;
+    uint32_t lastLedToggle = 0;
+    bool ledState = false;
+
+    // Build the announce payload once
+    StaticJsonDocument<256> doc;
+    doc["device_id"]        = deviceConfig.getDeviceId();
+    doc["mac"]              = deviceConfig.getMacAddress();
+    doc["firmware_version"] = FIRMWARE_VER;
+    doc["ip"]               = net.getIPAddress().c_str();
+    char announceBuf[256];
+    serializeJson(doc, announceBuf, sizeof(announceBuf));
+
+    while (true) {
+        esp_task_wdt_reset();
+
+        // Ensure network + MQTT
+        if (!net.ensureConnected()) { delay(500); continue; }
+        mqtt.ensureConnected();
+        mqtt.client().loop();
+
+        uint32_t now = millis();
+
+        // Announce periodically
+        if (now - lastAnnounce >= PROV_ANNOUNCE_INTERVAL_MS) {
+            lastAnnounce = now;
+            // Update IP in case it changed
+            doc["ip"] = net.getIPAddress().c_str();
+            serializeJson(doc, announceBuf, sizeof(announceBuf));
+            mqtt.publishAnnounce(announceBuf);
+            DEBUG_PRINTF("[PROV] Announced: %s\n", announceBuf);
+        }
+
+        // Fast LED blink to indicate provisioning
+        if (now - lastLedToggle >= PROV_LED_BLINK_MS) {
+            lastLedToggle = now;
+            ledState = !ledState;
+            digitalWrite(PIN_STATUS_LED, ledState ? HIGH : LOW);
+        }
+
+        delay(10);
+    }
+    // Never reaches here — PROVISION command handler calls ESP.restart()
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // setup()
 // ─────────────────────────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(SERIAL_BAUD);
     delay(500);   // Let Serial settle
-    printBanner();
 
     // ── Status LED ────────────────────────────────────────────────────────
     pinMode(PIN_STATUS_LED, OUTPUT);
@@ -166,6 +223,12 @@ void setup() {
     esp_task_wdt_init(WATCHDOG_TIMEOUT_SEC, true);
     esp_task_wdt_add(NULL);
     DEBUG_PRINTF("[WDT] Watchdog armed: %d s\n", WATCHDOG_TIMEOUT_SEC);
+
+    // ── Load NVS config + generate device ID from MAC ─────────────────────
+    deviceConfig.begin();
+
+    // Print banner (after config loaded so device ID is available)
+    printBanner();
 
     // ── Sensor initialisation ─────────────────────────────────────────────
     DEBUG_PRINTLN("[MAIN] Initialising sensors…");
@@ -222,9 +285,20 @@ void setup() {
         DEBUG_PRINTLN("[MAIN] WARN — Network not up yet; NTP sync deferred");
     }
 
-    // ── MQTT ──────────────────────────────────────────────────────────────
-    DEBUG_PRINTLN("[MAIN] Starting MQTT…");
-    mqtt.begin();
+    // ═════════════════════════════════════════════════════════════════════════
+    // PROVISIONING CHECK — if no license key, enter provisioning mode
+    // ═════════════════════════════════════════════════════════════════════════
+    if (!deviceConfig.isProvisioned()) {
+        mqtt.beginProvisioning(deviceConfig.getDeviceId());
+        enterProvisioningLoop();  // Blocks forever until provisioned + reboot
+        return;  // Never reached
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // NORMAL MODE — device is provisioned
+    // ═════════════════════════════════════════════════════════════════════════
+    DEBUG_PRINTLN("[MAIN] Starting MQTT (normal mode)…");
+    mqtt.begin(deviceConfig);
     mqtt.ensureConnected();
 
     // ── OTA ────────────────────────────────────────────────────────────────

@@ -34,15 +34,21 @@
 // #define SENSOR_CONFIG_BME680               // Alternative: BME680 standalone
 
 
-// ─── DEVICE IDENTITY (from backend admin panel) ───────────────────────────────
-// After registering the device via POST /api/v1/workshops/{id}/devices,
-// copy the device_id and license_key here.
+// ─── DEVICE IDENTITY ─────────────────────────────────────────────────────────
+// Device ID is auto-generated from MAC address at runtime.
+// License key, workshop ID, and pit ID are stored in NVS (set via MQTT provisioning).
+// See utils/device_config.h for runtime access.
+#define FIRMWARE_VER    "2.0.0"
 
-#define DEVICE_ID       "ESP32-083AF2A9F084"     // Real MAC: 08:3A:F2:A9:F0:84
-#define LICENSE_KEY     "LIC-A4RE-38HN-GVL2"    // Registered license key
-#define WORKSHOP_ID     15                       // PP Monitoring Workshop
-#define PIT_ID          10                       // Main Pit
-#define FIRMWARE_VER    "1.1.0"
+
+// ─── PROVISIONING ────────────────────────────────────────────────────────────
+// When no license key is found in NVS, the device enters provisioning mode:
+//   1. Connects WiFi + MQTT
+//   2. Publishes to "provisioning/announce" every PROV_ANNOUNCE_INTERVAL_MS
+//   3. Subscribes to "provisioning/{device_id}/config"
+//   4. Blinks LED fast until admin approves and sends config via MQTT
+#define PROV_ANNOUNCE_INTERVAL_MS  30000   // Re-announce every 30 seconds
+#define PROV_LED_BLINK_MS          200     // Fast LED blink during provisioning
 
 
 // ─── OTA (Over-the-Air Update) ──────────────────────────────────────────────

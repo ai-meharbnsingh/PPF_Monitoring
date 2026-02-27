@@ -50,12 +50,12 @@ class Device(Base, TimestampMixin):
     pit_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("pits.id"), nullable=True
     )
-    workshop_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("workshops.id"), nullable=False
+    workshop_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("workshops.id"), nullable=True
     )
     # Unique device identity
     device_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    license_key: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
+    license_key: Mapped[Optional[str]] = mapped_column(String(30), unique=True, nullable=True)
     firmware_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Sensor configuration
@@ -86,7 +86,7 @@ class Device(Base, TimestampMixin):
 
     # ── Relationships ──────────────────────────────────────────────────────
     pit: Mapped[Optional["Pit"]] = relationship("Pit", back_populates="device")
-    workshop: Mapped["Workshop"] = relationship("Workshop", back_populates="devices")
+    workshop: Mapped[Optional["Workshop"]] = relationship("Workshop", back_populates="devices")
     primary_sensor_type: Mapped[Optional[SensorType]] = relationship(
         "SensorType", foreign_keys=[primary_sensor_type_id], lazy="selectin"
     )

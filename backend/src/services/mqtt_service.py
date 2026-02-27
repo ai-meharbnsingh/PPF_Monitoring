@@ -34,6 +34,7 @@ from src.services.sensor_service import (
 )
 from src.utils.constants import (
     MQTT_SUBSCRIBE_DEVICE_STATUS,
+    MQTT_SUBSCRIBE_PROVISIONING,
     MQTT_SUBSCRIBE_SENSOR_DATA,
     DeviceCommand,
     DeviceCommandStatus,
@@ -126,8 +127,10 @@ def _on_connect(client: mqtt.Client, userdata, flags, rc: int) -> None:
         # Subscribe to sensor data and device status topics
         client.subscribe(MQTT_SUBSCRIBE_SENSOR_DATA, qos=settings.MQTT_QOS)
         client.subscribe(MQTT_SUBSCRIBE_DEVICE_STATUS, qos=settings.MQTT_QOS)
+        client.subscribe(MQTT_SUBSCRIBE_PROVISIONING, qos=settings.MQTT_QOS)
         logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_SENSOR_DATA}")
         logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_DEVICE_STATUS}")
+        logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_PROVISIONING}")
     else:
         error_messages = {
             1: "Connection refused — incorrect protocol version",
@@ -174,6 +177,11 @@ def _on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> Non
     elif "/status" in topic:
         asyncio.run_coroutine_threadsafe(
             _handle_device_status(topic, payload_str),
+            _event_loop,
+        )
+    elif "provisioning/announce" in topic:
+        asyncio.run_coroutine_threadsafe(
+            _handle_provisioning_announce(topic, payload_str),
             _event_loop,
         )
 
@@ -268,6 +276,116 @@ async def _handle_device_status(topic: str, payload_str: str) -> None:
         logger.debug(f"Device status on '{topic}': {data}")
     except json.JSONDecodeError as e:
         logger.warning(f"Invalid device status JSON on '{topic}': {e}")
+
+
+async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
+    """
+    Handle provisioning announce messages from new ESP32 devices.
+    Creates a pending device record if one does not already exist.
+    """
+    try:
+        data = json.loads(payload_str)
+    except json.JSONDecodeError as e:
+        logger.warning(f"Invalid provisioning announce JSON on '{topic}': {e}")
+        return
+
+    device_id = data.get("device_id", "")
+    mac = data.get("mac", "")
+    fw_version = data.get("firmware_version", "")
+    ip_address = data.get("ip", "")
+
+    if not device_id:
+        logger.warning("Provisioning announce missing device_id, ignoring")
+        return
+
+    try:
+        from sqlalchemy import select
+        from src.models.device import Device
+
+        async with get_db_context() as db:
+            existing = await db.execute(
+                select(Device).where(Device.device_id == device_id)
+            )
+            device = existing.scalar_one_or_none()
+
+            if device is None:
+                # New device -- create as pending (no license key, no workshop)
+                device = Device(
+                    device_id=device_id,
+                    mac_address=mac,
+                    firmware_version=fw_version,
+                    ip_address=ip_address,
+                    status="pending",
+                    is_online=True,
+                    last_seen=utc_now(),
+                )
+                db.add(device)
+                await db.commit()
+                logger.info(f"New pending device detected: {device_id}")
+            elif device.status == "pending":
+                # Already pending -- update last_seen
+                device.last_seen = utc_now()
+                device.ip_address = ip_address
+                device.firmware_version = fw_version
+                device.is_online = True
+                await db.commit()
+                logger.debug(f"Pending device re-announced: {device_id}")
+            else:
+                # Already provisioned (active/disabled/etc) -- ignore
+                logger.debug(
+                    f"Provisioning announce from already-provisioned device "
+                    f"{device_id} (status={device.status}), ignoring"
+                )
+    except Exception as e:
+        logger.error(f"Error handling provisioning announce: {e}", exc_info=True)
+
+
+def publish_provisioning_config(
+    device_id: str,
+    license_key: str,
+    workshop_id: int,
+    pit_id: int = 0,
+) -> bool:
+    """
+    Publish provisioning config (license key, workshop assignment) to a device.
+
+    Args:
+        device_id: Target device ID
+        license_key: Generated license key
+        workshop_id: Workshop to assign the device to
+        pit_id: Optional pit assignment (0 = unassigned)
+
+    Returns:
+        bool: True if published successfully
+    """
+    client = get_mqtt_client()
+    topic = f"provisioning/{device_id}/config"
+    message = {
+        "command": "PROVISION",
+        "license_key": license_key,
+        "workshop_id": workshop_id,
+        "pit_id": pit_id,
+    }
+    try:
+        result = client.publish(topic, json.dumps(message), qos=1, retain=False)
+        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+            logger.info(
+                f"Published provisioning config to device '{device_id}' "
+                f"topic='{topic}'"
+            )
+            return True
+        else:
+            logger.error(
+                f"Failed to publish provisioning config to '{device_id}': "
+                f"MQTT error code {result.rc}"
+            )
+            return False
+    except Exception as e:
+        logger.error(
+            f"Exception publishing provisioning config to '{device_id}': {e}",
+            exc_info=True,
+        )
+        return False
 
 
 def setup_mqtt(loop: asyncio.AbstractEventLoop) -> None:

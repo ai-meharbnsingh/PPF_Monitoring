@@ -75,6 +75,19 @@ class DeviceUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=500)
 
 
+class DeviceApproveRequest(BaseModel):
+    """POST /devices/{device_id}/approve — approve a pending device."""
+
+    workshop_id: int
+
+
+class DeviceAssignRequest(BaseModel):
+    """PUT /devices/{device_id}/assign — assign device to a pit."""
+
+    workshop_id: int
+    pit_id: int
+
+
 class DeviceCommandRequest(BaseModel):
     """POST /devices/{device_id}/command — send command via MQTT."""
 
@@ -89,7 +102,7 @@ class DeviceSummary(BaseModel):
 
     device_id: str
     pit_id: Optional[int]
-    workshop_id: int
+    workshop_id: Optional[int]
     status: str
     is_online: bool
     last_seen: Optional[datetime]
@@ -105,8 +118,8 @@ class DeviceResponse(BaseModel):
     id: int
     device_id: str
     pit_id: Optional[int]
-    workshop_id: int
-    license_key: str
+    workshop_id: Optional[int]
+    license_key: Optional[str]
     firmware_version: Optional[str]
 
     # Sensor configuration
