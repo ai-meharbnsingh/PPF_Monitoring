@@ -72,16 +72,33 @@ export default function StaffPage() {
   })
   const editForm = useForm<EditFormValues>()
 
+  // Debug logging
+  console.log('StaffPage - userRole:', userRole, 'isSuperAdmin:', isSuperAdmin)
+  console.log('StaffPage - workshops:', workshops.length, workshops)
+
   // Load workshops for super admin
   const loadWorkshops = useCallback(async () => {
-    if (!isSuperAdmin) return
+    if (!isSuperAdmin) {
+      console.log('Not loading workshops - not super admin')
+      return
+    }
     try {
+      console.log('Loading workshops...')
       const resp = await workshopsApi.getAll()
+      console.log('Workshops loaded:', resp)
       setWorkshops(resp)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load workshops:', err)
       toast.error('Failed to load workshops')
     }
   }, [isSuperAdmin])
+
+  // Load workshops when modal opens
+  useEffect(() => {
+    if (createOpen && isSuperAdmin) {
+      loadWorkshops()
+    }
+  }, [createOpen, isSuperAdmin, loadWorkshops])
 
   // Load users - super admin sees all, others see their workshop
   const loadUsers = useCallback(async () => {
@@ -338,36 +355,49 @@ export default function StaffPage() {
       {/* Create modal */}
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Team Member" size="md">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-          {/* Workshop selector for super_admin */}
-          {isSuperAdmin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                Workshop *
-              </label>
-              {workshops.length === 0 ? (
-                <div className="text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
-                  No workshops found. Please create a workshop first in Admin page.
-                </div>
-              ) : (
-                <select
-                  {...createForm.register('workshop_id', { required: 'Required' })}
-                  className="w-full bg-[#1a1a1a] border-2 border-gray-600 hover:border-gray-500 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-colors"
-                >
-                  <option value="" className="bg-[#1a1a1a] text-gray-400">-- Select a workshop --</option>
-                  {workshops.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-[#1a1a1a] text-white">
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {createForm.formState.errors.workshop_id && (
-                <p className="text-xs text-red-400 mt-1">
-                  {createForm.formState.errors.workshop_id.message}
-                </p>
-              )}
-            </div>
-          )}
+          {/* Debug info - visible */}
+          <div className="text-xs text-gray-500 bg-gray-800/50 rounded px-2 py-1">
+            Role: {userRole} | SuperAdmin: {isSuperAdmin ? 'Yes' : 'No'} | Workshops: {workshops.length}
+          </div>
+          
+          {/* Workshop selector - ALWAYS show for now to debug */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Workshop *
+            </label>
+            {workshops.length === 0 ? (
+              <div className="text-sm text-amber-400 bg-amber-400/10 border-2 border-amber-400/30 rounded-lg px-3 py-3">
+                ⚠️ No workshops loaded. 
+                {!isSuperAdmin && 'Only Super Admin can assign workshops.'}
+                {isSuperAdmin && 'Click "Load Workshops" below or create a workshop in Admin page.'}
+              </div>
+            ) : (
+              <select
+                {...createForm.register('workshop_id', { required: 'Required' })}
+                className="w-full bg-[#1a1a1a] border-2 border-cyan-600 rounded-lg px-3 py-3 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-colors"
+              >
+                <option value="" className="bg-[#1a1a1a] text-gray-400">-- Select a workshop --</option>
+                {workshops.map((w) => (
+                  <option key={w.id} value={w.id} className="bg-[#1a1a1a] text-white">
+                    {w.name} (ID: {w.id})
+                  </option>
+                ))}
+              </select>
+            )}
+            {/* Manual load button */}
+            <button
+              type="button"
+              onClick={loadWorkshops}
+              className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
+            >
+              ↻ Load/Refresh Workshops
+            </button>
+            {createForm.formState.errors.workshop_id && (
+              <p className="text-xs text-red-400 mt-1">
+                {createForm.formState.errors.workshop_id.message}
+              </p>
+            )}
+          </div>
           
           {/* Role selector for super_admin */}
           {isSuperAdmin && (
