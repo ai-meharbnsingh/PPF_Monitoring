@@ -58,6 +58,28 @@ export default function AdminPage() {
         queryFn: workshopsApi.getAll
     })
 
+    // Assign owner modal state
+    const [assignOwnerModal, setAssignOwnerModal] = useState<{ open: boolean; workshop: Workshop | null }>({
+        open: false,
+        workshop: null
+    })
+    const [selectedOwnerId, setSelectedOwnerId] = useState<number | ''>('')
+
+    // Assign owner mutation
+    const assignOwnerMutation = useMutation({
+        mutationFn: ({ workshopId, ownerId }: { workshopId: number; ownerId: number }) =>
+            workshopsApi.assignOwner(workshopId, ownerId),
+        onSuccess: () => {
+            toast.success('Owner assigned successfully!')
+            queryClient.invalidateQueries({ queryKey: ['admin_workshops'] })
+            setAssignOwnerModal({ open: false, workshop: null })
+            setSelectedOwnerId('')
+        },
+        onError: () => {
+            toast.error('Failed to assign owner')
+        }
+    })
+
     // Fetch all users (for owner selection) - we need to get this from a super admin endpoint
     // For now, we'll fetch users from workshop 1 or create a new endpoint
     const { data: users } = useQuery({
@@ -477,6 +499,7 @@ export default function AdminPage() {
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">Name</th>
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">Email</th>
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">Owner</th>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -492,6 +515,18 @@ export default function AdminPage() {
                                                 <td className="p-3 text-white">{ws.name}</td>
                                                 <td className="p-3 text-gray-400">{ws.contact_email || '-'}</td>
                                                 <td className="p-3 text-gray-400">{ownerName}</td>
+                                                <td className="p-3">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        onClick={() => {
+                                                            setAssignOwnerModal({ open: true, workshop: ws })
+                                                            setSelectedOwnerId(ws.owner_user_id || '')
+                                                        }}
+                                                    >
+                                                        {ws.owner_user_id ? 'Change Owner' : 'Assign Owner'}
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         )
                                     })}
@@ -501,6 +536,59 @@ export default function AdminPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Assign Owner Modal */}
+            {assignOwnerModal.open && assignOwnerModal.workshop && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                    <div className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-md">
+                        <h3 className="text-lg font-bold text-white mb-4">
+                            Assign Owner to {assignOwnerModal.workshop.name}
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                            Select an owner user for this workshop
+                        </p>
+                        <select
+                            value={selectedOwnerId}
+                            onChange={(e) => setSelectedOwnerId(e.target.value ? parseInt(e.target.value) : '')}
+                            className="w-full bg-[#1a1a1a] border-2 border-gray-600 rounded-lg px-3 py-2.5 text-white text-sm mb-4 focus:outline-none focus:border-cyan-400"
+                        >
+                            <option value="">-- Select Owner --</option>
+                            {users?.filter((u: any) => u.role === 'owner' || u.role === 'super_admin').map((user: any) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.first_name || user.last_name 
+                                        ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
+                                        : user.username} ({user.role})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setAssignOwnerModal({ open: false, workshop: null })
+                                    setSelectedOwnerId('')
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    if (selectedOwnerId && assignOwnerModal.workshop) {
+                                        assignOwnerMutation.mutate({
+                                            workshopId: assignOwnerModal.workshop.id,
+                                            ownerId: Number(selectedOwnerId)
+                                        })
+                                    }
+                                }}
+                                isLoading={assignOwnerMutation.isPending}
+                                disabled={!selectedOwnerId}
+                            >
+                                Assign Owner
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

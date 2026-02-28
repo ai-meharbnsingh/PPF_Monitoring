@@ -30,5 +30,17 @@ export const workshopsApi = {
     create: async (payload: CreateWorkshopPayload) => {
         const { data } = await client.post<{ data: Workshop }>('/workshops', payload)
         return data.data
+    },
+
+    update: async (workshopId: number, payload: Partial<CreateWorkshopPayload>) => {
+        const { data } = await client.patch<{ data: Workshop }>(`/workshops/${workshopId}`, payload)
+        return data.data
+    },
+
+    assignOwner: async (workshopId: number, ownerUserId: number) => {
+        const { data } = await client.patch<{ data: Workshop }>(`/workshops/${workshopId}`, {
+            owner_user_id: ownerUserId
+        })
+        return data.data
     }
 }
