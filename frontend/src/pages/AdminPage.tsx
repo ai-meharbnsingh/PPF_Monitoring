@@ -81,14 +81,21 @@ export default function AdminPage() {
     })
 
     // Fetch all users (for owner selection)
-    const { data: users } = useQuery({
+    const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
         queryKey: ['admin_users'],
         queryFn: async () => {
+            console.log('AdminPage: Fetching users...')
             const resp = await usersApi.listAll()
+            console.log('AdminPage: Users fetched:', resp.items?.length, resp.items)
             return resp.items
         },
         enabled: activeTab === 'workshop'
     })
+    
+    // Debug logging
+    console.log('AdminPage - users:', users?.length, users)
+    console.log('AdminPage - usersLoading:', usersLoading)
+    console.log('AdminPage - usersError:', usersError)
 
     // Create workshop mutation
     const createMutation = useMutation({
@@ -539,8 +546,11 @@ export default function AdminPage() {
                         <h3 className="text-lg font-bold text-white mb-4">
                             Assign Owner to {assignOwnerModal.workshop.name}
                         </h3>
-                        <p className="text-sm text-gray-400 mb-4">
+                        <p className="text-sm text-gray-400 mb-2">
                             Select an owner user for this workshop
+                        </p>
+                        <p className="text-xs text-yellow-400 mb-4">
+                            Debug: Found {users?.length || 0} total users, {users?.filter((u: any) => u.role === 'owner' || u.role === 'super_admin').length || 0} eligible (owner/super_admin)
                         </p>
                         <select
                             value={selectedOwnerId}
