@@ -91,6 +91,7 @@ class JobSummary(BaseModel):
 
     id: int
     pit_id: int
+    pit_name: Optional[str] = None
     workshop_id: int
     work_type: str
     status: str
@@ -102,6 +103,8 @@ class JobSummary(BaseModel):
     quoted_price: Optional[float]
     currency: str
     created_at: datetime
+    customer_name: Optional[str] = None
+    tracking_code: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

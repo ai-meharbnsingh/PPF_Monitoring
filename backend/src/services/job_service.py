@@ -92,6 +92,8 @@ async def list_jobs_for_workshop(
     status_filter: Optional[str] = None,
     pit_id_filter: Optional[int] = None,
 ) -> Tuple[List[Job], int]:
+    from sqlalchemy.orm import selectinload
+    
     base_query = select(Job).where(Job.workshop_id == workshop_id)
     if status_filter:
         base_query = base_query.where(Job.status == status_filter)
@@ -105,7 +107,11 @@ async def list_jobs_for_workshop(
 
     offset = (page - 1) * page_size
     result = await db.execute(
-        base_query.order_by(Job.created_at.desc()).offset(offset).limit(page_size)
+        base_query
+        .options(selectinload(Job.customer), selectinload(Job.pit))
+        .order_by(Job.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
     )
     return result.scalars().all(), total
 

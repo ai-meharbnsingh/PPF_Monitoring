@@ -134,6 +134,7 @@ async def list_jobs(
         items.append({
             "id": job.id,
             "pit_id": job.pit_id,
+            "pit_name": job.pit.display_name if job.pit else None,
             "workshop_id": job.workshop_id,
             "work_type": job.work_type,
             "status": job.status,
@@ -145,6 +146,8 @@ async def list_jobs(
             "quoted_price": float(job.quoted_price) if job.quoted_price else None,
             "currency": job.currency,
             "created_at": job.created_at,
+            "customer_name": job.customer.full_name if job.customer else None,
+            "tracking_code": job.tracking_code,
         })
     return build_paginated(items=items, total=total, page=page, page_size=page_size)
 
