@@ -80,17 +80,12 @@ export default function AdminPage() {
         }
     })
 
-    // Fetch all users (for owner selection) - we need to get this from a super admin endpoint
-    // For now, we'll fetch users from workshop 1 or create a new endpoint
+    // Fetch all users (for owner selection)
     const { data: users } = useQuery({
         queryKey: ['admin_users'],
         queryFn: async () => {
-            // Fetch all users across all workshops using super admin endpoint
-            const resp = await fetch('/api/v1/users?page_size=100', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('ppf_token')}` }
-            })
-            const data = await resp.json()
-            return data.data?.items || data.items || []
+            const resp = await usersApi.listAll()
+            return resp.items
         },
         enabled: activeTab === 'workshop'
     })
