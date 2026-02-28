@@ -93,13 +93,26 @@ app = FastAPI(
 
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Allow all origins in development for easier testing
+logger.info(f"CORS Setup - Environment: {settings.ENVIRONMENT}, is_development: {settings.is_development}")
+if settings.is_development:
+    logger.info("CORS: Allowing all origins [*] in development mode")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    logger.info(f"CORS: Using configured origins: {settings.CORS_ORIGINS}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
