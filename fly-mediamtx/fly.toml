@@ -1,0 +1,53 @@
+app = "ppf-mediamtx"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[services]]
+  internal_port = 8554
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  
+  [[services.ports]]
+    port = 8554
+
+[[services]]
+  internal_port = 8888
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  
+  [[services.ports]]
+    port = 8888
+    handlers = ["http"]
+
+[[services]]
+  internal_port = 8889
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  
+  [[services.ports]]
+    port = 8889
+    handlers = ["http"]
+
+[[services]]
+  internal_port = 9997
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  
+  [[services.ports]]
+    port = 9997
+    handlers = ["http"]
+
+[vm]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
