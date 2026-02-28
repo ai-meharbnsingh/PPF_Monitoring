@@ -3,8 +3,12 @@ import { LS_TOKEN_KEY } from '@/utils/constants'
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ppf-backend-w0aq.onrender.com/api/v1'
+console.log('API Client - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
+console.log('API Client - Using baseURL:', API_BASE_URL)
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,
 })
