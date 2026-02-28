@@ -3,17 +3,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { workshopsApi, CreateWorkshopPayload } from '@/api/workshops'
 import { pitsApi, CreatePitPayload } from '@/api/pits'
+import { usersApi } from '@/api/users'
 import { Workshop } from '@/types/common'
 import { toast } from 'react-hot-toast'
+import { UserPlus, Building2 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+
+// Extend CreateWorkshopPayload for the form
+interface WorkshopFormData extends CreateWorkshopPayload {
+    owner_user_id?: number
+}
 
 export default function AdminPage() {
     const queryClient = useQueryClient()
-    const [formData, setFormData] = useState<CreateWorkshopPayload>({
+    const [activeTab, setActiveTab] = useState<'workshop' | 'owner' | 'pit'>('workshop')
+    
+    // Workshop form
+    const [formData, setFormData] = useState<WorkshopFormData>({
         name: '',
-        slug: '',
-        contact_email: '',
-        contact_phone: ''
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        timezone: 'Asia/Kolkata',
+        owner_user_id: undefined
     })
+    
+    // Owner user form
+    const [ownerForm, setOwnerForm] = useState({
+        username: '',
+        email: '',
+        first_name: '',
+        last_name: '',
+        password: '',
+        workshop_id: undefined as number | undefined
+    })
+    
+    // Pit form
     const [pitForm, setPitForm] = useState<CreatePitPayload & { workshop_id: string }>({
         workshop_id: '',
         pit_number: 1,
@@ -29,16 +58,85 @@ export default function AdminPage() {
         queryFn: workshopsApi.getAll
     })
 
+    // Fetch all users (for owner selection) - we need to get this from a super admin endpoint
+    // For now, we'll fetch users from workshop 1 or create a new endpoint
+    const { data: users } = useQuery({
+        queryKey: ['admin_users'],
+        queryFn: async () => {
+            // Fetch all users across all workshops using super admin endpoint
+            const resp = await fetch('/api/v1/users?page_size=100', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('ppf_token')}` }
+            })
+            const data = await resp.json()
+            return data.data?.items || data.items || []
+        },
+        enabled: activeTab === 'workshop'
+    })
+
     // Create workshop mutation
     const createMutation = useMutation({
-        mutationFn: workshopsApi.create,
+        mutationFn: (payload: WorkshopFormData) => {
+            // Remove undefined values
+            const cleanPayload: CreateWorkshopPayload = {
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone,
+                address: payload.address,
+                city: payload.city,
+                state: payload.state,
+                timezone: payload.timezone,
+            }
+            if (payload.owner_user_id) {
+                (cleanPayload as any).owner_user_id = payload.owner_user_id
+            }
+            return workshopsApi.create(cleanPayload)
+        },
         onSuccess: () => {
             toast.success('Workshop created successfully!')
             queryClient.invalidateQueries({ queryKey: ['admin_workshops'] })
-            setFormData({ name: '', slug: '', contact_email: '', contact_phone: '' })
+            setFormData({ 
+                name: '', 
+                email: '', 
+                phone: '', 
+                address: '', 
+                city: '', 
+                state: '', 
+                timezone: 'Asia/Kolkata',
+                owner_user_id: undefined 
+            })
         },
         onError: (error: any) => {
             toast.error(error?.response?.data?.detail?.[0]?.msg || error?.response?.data?.detail || 'Failed to create workshop')
+        }
+    })
+
+    // Create owner user mutation
+    const createOwnerMutation = useMutation({
+        mutationFn: async (data: typeof ownerForm) => {
+            return usersApi.create({
+                username: data.username,
+                email: data.email,
+                first_name: data.first_name,
+                last_name: data.last_name,
+                password: data.password,
+                role: 'owner',
+                workshop_id: data.workshop_id
+            })
+        },
+        onSuccess: () => {
+            toast.success('Owner user created successfully!')
+            queryClient.invalidateQueries({ queryKey: ['admin_users'] })
+            setOwnerForm({
+                username: '',
+                email: '',
+                first_name: '',
+                last_name: '',
+                password: '',
+                workshop_id: undefined
+            })
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.detail?.[0]?.msg || error?.response?.data?.detail || 'Failed to create owner')
         }
     })
 
@@ -57,11 +155,20 @@ export default function AdminPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (!formData.name || !formData.slug) {
-            toast.error('Name and Slug are required')
+        if (!formData.name) {
+            toast.error('Workshop Name is required')
             return
         }
         createMutation.mutate(formData)
+    }
+
+    const handleOwnerSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!ownerForm.username || !ownerForm.password || !ownerForm.email) {
+            toast.error('Username, email and password are required')
+            return
+        }
+        createOwnerMutation.mutate(ownerForm)
     }
 
     const handlePitSubmit = (e: React.FormEvent) => {
@@ -75,102 +182,221 @@ export default function AdminPage() {
         createPitMutation.mutate({ workshopId: wsId, payload })
     }
 
+    const ownerUsers = users?.filter((u: any) => u.role === 'owner') || []
+
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
             <h1 className="text-2xl font-bold text-white mb-6">Super Admin Dashboard</h1>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Workshop List */}
-                <Card className="bg-matte-black border-white/[0.08]">
-                    <CardHeader>
-                        <CardTitle className="text-lg text-white">Workshops</CardTitle>
-                        <CardDescription>Manage all workshops across the platform.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? (
-                            <p className="text-gray-400">Loading...</p>
-                        ) : workshops?.length === 0 ? (
-                            <p className="text-gray-500 italic">No workshops found.</p>
-                        ) : (
-                            <ul className="space-y-3">
-                                {workshops?.map((ws: Workshop) => (
-                                    <li key={ws.id} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-white">{ws.name}</p>
-                                            <p className="text-xs text-electric-blue">{ws.slug}</p>
-                                        </div>
-                                        <div className="text-right text-sm text-gray-400">
-                                            <p>ID: {ws.id}</p>
-                                            <p>{ws.contact_phone || 'No phone'}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6">
+                <Button
+                    variant={activeTab === 'workshop' ? 'primary' : 'secondary'}
+                    onClick={() => setActiveTab('workshop')}
+                    leftIcon={<Building2 className="h-4 w-4" />}
+                >
+                    Create Workshop
+                </Button>
+                <Button
+                    variant={activeTab === 'owner' ? 'primary' : 'secondary'}
+                    onClick={() => setActiveTab('owner')}
+                    leftIcon={<UserPlus className="h-4 w-4" />}
+                >
+                    Create Owner
+                </Button>
+                <Button
+                    variant={activeTab === 'pit' ? 'primary' : 'secondary'}
+                    onClick={() => setActiveTab('pit')}
+                >
+                    Create Pit
+                </Button>
+            </div>
 
-                {/* Create Workshop Form */}
+            {/* Workshop Form */}
+            {activeTab === 'workshop' && (
                 <Card className="bg-matte-black border-white/[0.08]">
                     <CardHeader>
                         <CardTitle className="text-lg text-white">Create New Workshop</CardTitle>
+                        <CardDescription>Create a workshop and optionally assign an owner.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Workshop Name *</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                                    placeholder="e.g. Delhi PPF Hub"
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Workshop Name *</label>
+                                    <Input
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="e.g. Delhi PPF Hub"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Owner User</label>
+                                    <Select
+                                        value={formData.owner_user_id?.toString() || ''}
+                                        onChange={(e) => setFormData({ ...formData, owner_user_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                                        options={[
+                                            { value: '', label: 'Select owner (optional)' },
+                                            ...ownerUsers.map((u: any) => ({ 
+                                                value: String(u.id), 
+                                                label: `${u.username} (${u.email})` 
+                                            })),
+                                        ]}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Slug *</label>
-                                <input
-                                    type="text"
-                                    value={formData.slug}
-                                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                                    placeholder="e.g. delhi-ppf"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                                    <input
+                                    <Input
                                         type="email"
-                                        value={formData.contact_email}
-                                        onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
+                                        value={formData.email || ''}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="workshop@example.com"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-                                    <input
-                                        type="text"
-                                        value={formData.contact_phone}
-                                        onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
+                                    <Input
+                                        value={formData.phone || ''}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        placeholder="+91 98765 43210"
                                     />
                                 </div>
                             </div>
-                            <button
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">City</label>
+                                    <Input
+                                        value={formData.city || ''}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        placeholder="e.g. Delhi"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">State</label>
+                                    <Input
+                                        value={formData.state || ''}
+                                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                                        placeholder="e.g. Delhi"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Timezone</label>
+                                    <Select
+                                        value={formData.timezone}
+                                        onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                                        options={[
+                                            { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST)' },
+                                            { value: 'Asia/Dubai', label: 'Asia/Dubai' },
+                                            { value: 'UTC', label: 'UTC' },
+                                        ]}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                                <Input
+                                    value={formData.address || ''}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    placeholder="Full address"
+                                />
+                            </div>
+                            <Button
                                 type="submit"
-                                disabled={createMutation.isPending}
-                                className="w-full bg-electric-blue text-black font-semibold py-2 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors mt-2"
+                                isLoading={createMutation.isPending}
+                                className="w-full"
                             >
-                                {createMutation.isPending ? 'Creating...' : 'Create Workshop'}
-                            </button>
+                                Create Workshop
+                            </Button>
                         </form>
                     </CardContent>
                 </Card>
-            </div>
+            )}
 
-            {/* Create Pit Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Owner Form */}
+            {activeTab === 'owner' && (
+                <Card className="bg-matte-black border-white/[0.08]">
+                    <CardHeader>
+                        <CardTitle className="text-lg text-white">Create Owner User</CardTitle>
+                        <CardDescription>Create an owner user who can manage their workshop.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleOwnerSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Username *</label>
+                                    <Input
+                                        value={ownerForm.username}
+                                        onChange={(e) => setOwnerForm({ ...ownerForm, username: e.target.value })}
+                                        placeholder="e.g. owner_rajesh"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
+                                    <Input
+                                        type="email"
+                                        value={ownerForm.email}
+                                        onChange={(e) => setOwnerForm({ ...ownerForm, email: e.target.value })}
+                                        placeholder="owner@example.com"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">First Name</label>
+                                    <Input
+                                        value={ownerForm.first_name}
+                                        onChange={(e) => setOwnerForm({ ...ownerForm, first_name: e.target.value })}
+                                        placeholder="Rajesh"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Last Name</label>
+                                    <Input
+                                        value={ownerForm.last_name}
+                                        onChange={(e) => setOwnerForm({ ...ownerForm, last_name: e.target.value })}
+                                        placeholder="Kumar"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Password *</label>
+                                <Input
+                                    type="password"
+                                    value={ownerForm.password}
+                                    onChange={(e) => setOwnerForm({ ...ownerForm, password: e.target.value })}
+                                    placeholder="Min 8 characters"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Assign to Workshop (Optional)</label>
+                                <Select
+                                    value={ownerForm.workshop_id?.toString() || ''}
+                                    onChange={(e) => setOwnerForm({ ...ownerForm, workshop_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                                    options={[
+                                        { value: '', label: 'No workshop (assign later)' },
+                                        ...(workshops?.map((ws: Workshop) => ({ 
+                                            value: String(ws.id), 
+                                            label: `${ws.name} (ID: ${ws.id})` 
+                                        })) || []),
+                                    ]}
+                                />
+                            </div>
+                            <Button
+                                type="submit"
+                                isLoading={createOwnerMutation.isPending}
+                                className="w-full"
+                            >
+                                Create Owner
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Pit Form */}
+            {activeTab === 'pit' && (
                 <Card className="bg-matte-black border-white/[0.08]">
                     <CardHeader>
                         <CardTitle className="text-lg text-white">Create New Pit</CardTitle>
@@ -178,85 +404,96 @@ export default function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handlePitSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Workshop ID *</label>
-                                    <select
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Workshop *</label>
+                                    <Select
                                         value={pitForm.workshop_id}
                                         onChange={(e) => setPitForm({ ...pitForm, workshop_id: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                                    >
-                                        <option value="">Select Workshop</option>
-                                        {workshops?.map((ws: Workshop) => (
-                                            <option key={ws.id} value={ws.id}>{ws.name} (ID: {ws.id})</option>
-                                        ))}
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'Select workshop' },
+                                            ...(workshops?.map((ws: Workshop) => ({ 
+                                                value: String(ws.id), 
+                                                label: `${ws.name} (ID: ${ws.id})` 
+                                            })) || []),
+                                        ]}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-1">Pit Number *</label>
-                                    <input
+                                    <Input
                                         type="number"
                                         min={1}
                                         max={50}
                                         value={pitForm.pit_number}
                                         onChange={(e) => setPitForm({ ...pitForm, pit_number: parseInt(e.target.value) || 1 })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
                                     />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Pit Name</label>
-                                <input
-                                    type="text"
+                                <Input
                                     value={pitForm.name}
                                     onChange={(e) => setPitForm({ ...pitForm, name: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                                    placeholder="e.g. Bay 1 - Main Pit"
+                                    placeholder="e.g. Bay 1 - Premium"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                                <input
-                                    type="text"
-                                    value={pitForm.description}
+                                <Input
+                                    value={pitForm.description || ''}
                                     onChange={(e) => setPitForm({ ...pitForm, description: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                                    placeholder="e.g. PPF application bay with camera"
+                                    placeholder="Optional description"
                                 />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Camera IP</label>
-                                    <input
-                                        type="text"
-                                        value={pitForm.camera_ip}
-                                        onChange={(e) => setPitForm({ ...pitForm, camera_ip: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
-                                        placeholder="e.g. 192.168.29.64"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">RTSP URL</label>
-                                    <input
-                                        type="text"
-                                        value={pitForm.camera_rtsp_url}
-                                        onChange={(e) => setPitForm({ ...pitForm, camera_rtsp_url: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none"
-                                        placeholder="rtsp://..."
-                                    />
-                                </div>
-                            </div>
-                            <button
+                            <Button
                                 type="submit"
-                                disabled={createPitMutation.isPending}
-                                className="w-full bg-electric-blue text-black font-semibold py-2 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors mt-2"
+                                isLoading={createPitMutation.isPending}
+                                className="w-full"
                             >
-                                {createPitMutation.isPending ? 'Creating...' : 'Create Pit'}
-                            </button>
+                                Create Pit
+                            </Button>
                         </form>
                     </CardContent>
                 </Card>
-            </div>
+            )}
+
+            {/* Workshop List */}
+            <Card className="bg-matte-black border-white/[0.08]">
+                <CardHeader>
+                    <CardTitle className="text-lg text-white">All Workshops</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <p className="text-gray-400">Loading...</p>
+                    ) : workshops?.length === 0 ? (
+                        <p className="text-gray-500 italic">No workshops found.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-white/5">
+                                    <tr>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">ID</th>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Name</th>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Email</th>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Owner ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {workshops?.map((ws: Workshop) => (
+                                        <tr key={ws.id}>
+                                            <td className="p-3 text-white">{ws.id}</td>
+                                            <td className="p-3 text-white">{ws.name}</td>
+                                            <td className="p-3 text-gray-400">{ws.contact_email || '-'}</td>
+                                            <td className="p-3 text-gray-400">{ws.owner_user_id || 'Unassigned'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     )
 }

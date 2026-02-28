@@ -51,6 +51,7 @@ export interface Workshop {
   slug: string
   contact_email: string | null
   contact_phone: string | null
+  owner_user_id?: number | null
   created_at: string
 }
 

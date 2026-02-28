@@ -3,9 +3,14 @@ import type { Workshop } from '@/types/common'
 
 export interface CreateWorkshopPayload {
     name: string
-    slug: string
-    contact_email?: string
-    contact_phone?: string
+    slug?: string
+    email?: string
+    phone?: string
+    address?: string
+    city?: string
+    state?: string
+    timezone?: string
+    owner_user_id?: number
 }
 
 export const workshopsApi = {
