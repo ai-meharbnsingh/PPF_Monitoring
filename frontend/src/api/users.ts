@@ -23,7 +23,7 @@ export const usersApi = {
   // List all users across all workshops (Super Admin only)
   listAll: async (): Promise<PaginatedResponse<UserResponse>> => {
     const resp = await apiClient.get<any>('/users', {
-      params: { page_size: 1000 },
+      params: { page_size: 100 },  // Max allowed by backend
     })
     const payload = resp.data
     if (payload?.data?.items !== undefined) return payload.data
