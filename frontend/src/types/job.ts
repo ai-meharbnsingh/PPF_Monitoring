@@ -38,6 +38,7 @@ export interface JobSummary {
   actual_end_time: string | null
   created_at: string
   customer_name: string | null
+  tracking_code: string | null
 }
 
 // ─── Full job response (detail view) ─────────────────────────────────────────

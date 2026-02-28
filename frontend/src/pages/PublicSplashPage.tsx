@@ -59,7 +59,7 @@ export default function PublicSplashPage() {
 
     const handleTokenSubmit = () => {
         if (tokenValue.length === 6) {
-            window.location.href = `/track/${tokenValue}`
+            window.location.href = `/track?code=${tokenValue}`
         }
     }
 
@@ -370,9 +370,9 @@ export default function PublicSplashPage() {
                         type="text"
                         maxLength={6}
                         value={tokenValue}
-                        onChange={(e) => setTokenValue(e.target.value.toUpperCase())}
+                        onChange={(e) => setTokenValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleTokenSubmit() }}
-                        placeholder="ABC123"
+                        placeholder="847291"
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-center font-mono text-2xl tracking-[0.4em] placeholder-gray-600 focus:outline-none focus:border-electric-blue/50 transition-colors"
                     />
                     <button

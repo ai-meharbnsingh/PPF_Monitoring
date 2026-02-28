@@ -19,6 +19,7 @@ const AlertConfigPage = lazy(() => import('@/pages/AlertConfigPage'))
 const DevicesPage = lazy(() => import('@/pages/DevicesPage'))
 const StaffPage = lazy(() => import('@/pages/StaffPage'))
 const TrackingPage = lazy(() => import('@/pages/TrackingPage'))
+const TrackByCodePage = lazy(() => import('@/pages/TrackByCodePage'))
 const AdminPage = lazy(() => import('@/pages/AdminPage'))
 const AdminPendingDevicesPage = lazy(() => import('@/pages/admin/AdminPendingDevicesPage'))
 const AdminDeviceAssignmentsPage = lazy(() => import('@/pages/admin/AdminDeviceAssignmentsPage'))
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: <Lazy element={<LoginPage />} />,
+  },
+  {
+    path: '/track',
+    element: <Lazy element={<TrackByCodePage />} />,
   },
   {
     path: '/track/:token',

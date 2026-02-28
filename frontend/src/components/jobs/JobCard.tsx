@@ -1,14 +1,29 @@
 import { Link } from 'react-router-dom'
-import { Car, MapPin, Calendar } from 'lucide-react'
+import { Car, MapPin, Calendar, Eye } from 'lucide-react'
 import type { JobSummary } from '@/types/job'
 import { JobStatusBadge } from './JobStatusBadge'
 import { formatDate, formatCurrency } from '@/utils/formatters'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
 
 interface JobCardProps {
   job: JobSummary
 }
 
 export function JobCard({ job }: JobCardProps) {
+  const [copied, setCopied] = useState(false)
+
+  const copyTrackingCode = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (job.tracking_code) {
+      navigator.clipboard.writeText(job.tracking_code)
+      setCopied(true)
+      toast.success('Tracking code copied!')
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <Link
       to={`/admin/jobs/${job.id}`}
@@ -48,6 +63,25 @@ export function JobCard({ job }: JobCardProps) {
               <span className="text-gray-600">Customer: {job.customer_name}</span>
             )}
           </div>
+
+          {/* Tracking code */}
+          {job.tracking_code && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={copyTrackingCode}
+                className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                title="Copy tracking code to share with customer"
+              >
+                <Eye className="h-3 w-3 text-blue-600" />
+                <span className="text-xs font-mono font-semibold text-blue-700">
+                  {job.tracking_code}
+                </span>
+                <span className="text-xs text-blue-500">
+                  {copied ? 'Copied!' : 'Click to copy'}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-end gap-2 shrink-0">
