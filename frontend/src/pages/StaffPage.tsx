@@ -351,11 +351,11 @@ export default function StaffPage() {
               ) : (
                 <select
                   {...createForm.register('workshop_id', { required: 'Required' })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-electric-blue/50"
+                  className="w-full bg-[#1a1a1a] border-2 border-gray-600 hover:border-gray-500 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-colors"
                 >
-                  <option value="" className="bg-[#1a1a1a]">Select a workshop</option>
+                  <option value="" className="bg-[#1a1a1a] text-gray-400">-- Select a workshop --</option>
                   {workshops.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-[#1a1a1a]">
+                    <option key={w.id} value={w.id} className="bg-[#1a1a1a] text-white">
                       {w.name}
                     </option>
                   ))}
@@ -371,18 +371,18 @@ export default function StaffPage() {
           
           {/* Role selector for super_admin */}
           {isSuperAdmin && (
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-400">Role</label>
-              <div className="flex gap-2">
+            <div className="flex items-center gap-4 p-3 bg-[#1a1a1a] border-2 border-gray-600 rounded-lg">
+              <label className="text-sm font-medium text-gray-300">Role *</label>
+              <div className="flex gap-4">
                 {(['staff', 'owner'] as const).map((r) => (
-                  <label key={r} className="flex items-center gap-1.5 cursor-pointer">
+                  <label key={r} className="flex items-center gap-2 cursor-pointer hover:text-cyan-400 transition-colors">
                     <input
                       type="radio"
                       value={r}
                       {...createForm.register('role')}
-                      className="accent-electric-blue"
+                      className="w-4 h-4 accent-cyan-400 cursor-pointer"
                     />
-                    <span className="text-sm text-gray-300 capitalize">{r}</span>
+                    <span className="text-sm text-white capitalize">{r}</span>
                   </label>
                 ))}
               </div>
