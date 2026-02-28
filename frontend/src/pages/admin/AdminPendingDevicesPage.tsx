@@ -7,6 +7,7 @@ import { PageSpinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { Check, X, RefreshCw, Cpu } from 'lucide-react'
+import { client } from '@/api/client'
 import toast from 'react-hot-toast'
 
 interface PendingDevice {
@@ -48,24 +49,19 @@ export default function AdminPendingDevicesPage() {
   // Fetch pending devices and workshops
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('ppf_token')
-      
       // Fetch pending devices
-      const devicesRes = await fetch('/api/v1/admin/devices/pending', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const devicesData = await devicesRes.json()
+      const devicesRes = await client.get('/admin/devices/pending')
+      const devicesData = devicesRes.data
       
       // Fetch workshops for assignment
-      const workshopsRes = await fetch('/api/v1/workshops', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const workshopsData = await workshopsRes.json()
+      const workshopsRes = await client.get('/workshops')
+      const workshopsData = workshopsRes.data
       
       setDevices(devicesData.data?.items || [])
       setWorkshops(workshopsData.data?.items || [])
     } catch (error) {
       toast.error('Failed to fetch pending devices')
+      console.error('Fetch error:', error)
     } finally {
       setLoading(false)
     }
@@ -86,18 +82,11 @@ export default function AdminPendingDevicesPage() {
 
     setIsApproving(true)
     try {
-      const token = localStorage.getItem('ppf_token')
-      const res = await fetch(`/api/v1/admin/devices/${selectedDevice.device_id}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ workshop_id: parseInt(selectedWorkshop) }),
+      const res = await client.post(`/admin/devices/${selectedDevice.device_id}/approve`, {
+        workshop_id: parseInt(selectedWorkshop),
       })
 
-      if (res.ok) {
-        const data = await res.json()
+      const data = res.data
         toast.success(`Device approved! License: ${data.license_key}`)
         setSelectedDevice(null)
         setSelectedWorkshop('')
@@ -118,24 +107,13 @@ export default function AdminPendingDevicesPage() {
 
     setIsRejecting(true)
     try {
-      const token = localStorage.getItem('ppf_token')
-      const res = await fetch(`/api/v1/admin/devices/${deviceId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason: 'Rejected by admin' }),
+      await client.post(`/admin/devices/${deviceId}/reject`, {
+        reason: 'Rejected by admin',
       })
-
-      if (res.ok) {
-        toast.success('Device rejected')
-        fetchData()
-      } else {
-        toast.error('Failed to reject device')
-      }
+      toast.success('Device rejected')
+      fetchData()
     } catch (error) {
-      toast.error('Error rejecting device')
+      toast.error('Failed to reject device')
     } finally {
       setIsRejecting(false)
     }
