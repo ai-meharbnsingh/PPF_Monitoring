@@ -36,20 +36,32 @@ logger = get_logger(__name__)
 async def list_users(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    workshop_id: int = Query(..., description="Filter by workshop"),
+    workshop_id: int = Query(default=None, description="Filter by workshop (omit for super_admin to see all)"),
     role: str = Query(default=None, description="Filter by role"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_owner_or_admin),
 ):
-    """List users for a workshop. owner sees own workshop; super_admin sees any."""
-    if (
-        current_user.role != UserRole.SUPER_ADMIN.value
-        and current_user.workshop_id != workshop_id
-    ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
+    """List users for a workshop. owner sees own workshop; super_admin sees any or all."""
     from sqlalchemy import func
-    base_q = select(User).where(User.workshop_id == workshop_id)
+    
+    # Build base query
+    if workshop_id is not None:
+        # Specific workshop requested
+        if (
+            current_user.role != UserRole.SUPER_ADMIN.value
+            and current_user.workshop_id != workshop_id
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        base_q = select(User).where(User.workshop_id == workshop_id)
+    else:
+        # No workshop specified - only super_admin can see all
+        if current_user.role != UserRole.SUPER_ADMIN.value:
+            # Regular users see their own workshop
+            base_q = select(User).where(User.workshop_id == current_user.workshop_id)
+        else:
+            # Super admin sees all users
+            base_q = select(User)
+    
     if role:
         base_q = base_q.where(User.role == role)
 

@@ -20,6 +20,17 @@ export const usersApi = {
     return { items: [], total: 0, page: 1, page_size: 50, total_pages: 1, has_next: false, has_prev: false }
   },
 
+  // List all users across all workshops (Super Admin only)
+  listAll: async (): Promise<PaginatedResponse<UserResponse>> => {
+    const resp = await apiClient.get<any>('/users', {
+      params: { page_size: 1000 },
+    })
+    const payload = resp.data
+    if (payload?.data?.items !== undefined) return payload.data
+    if (payload?.items !== undefined) return payload
+    return { items: [], total: 0, page: 1, page_size: 50, total_pages: 1, has_next: false, has_prev: false }
+  },
+
   create: async (data: UserCreate): Promise<UserResponse> => {
     const resp = await apiClient.post<UserResponse>('/users', data)
     return resp.data

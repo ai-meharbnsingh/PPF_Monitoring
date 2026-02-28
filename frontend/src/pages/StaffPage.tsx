@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { usersApi } from '@/api/users'
+import { workshopsApi } from '@/api/workshops'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import type { UserResponse } from '@/types/user'
+import type { Workshop } from '@/types/common'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
@@ -16,6 +18,7 @@ import {
   Shield,
   UserCheck,
   UserX,
+  Building2,
 } from 'lucide-react'
 import { formatRelative } from '@/utils/formatters'
 import { useForm } from 'react-hook-form'
@@ -31,6 +34,7 @@ interface CreateFormValues {
   email: string
   phone: string
   role: 'staff' | 'owner'
+  workshop_id: number
 }
 
 interface EditFormValues {
@@ -50,7 +54,9 @@ export default function StaffPage() {
   const workshopId = useAppSelector((s) => s.auth.user?.workshop_id)
   const userRole = useAppSelector((s) => s.auth.user?.role)
   const isSuperAdmin = userRole === 'super_admin'
+  
   const [users, setUsers] = useState<UserResponse[]>([])
+  const [workshops, setWorkshops] = useState<Workshop[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [editUser, setEditUser] = useState<UserResponse | null>(null)
@@ -58,31 +64,67 @@ export default function StaffPage() {
   const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<RoleTab>('all')
 
-  const createForm = useForm<CreateFormValues>()
+  const createForm = useForm<CreateFormValues>({
+    defaultValues: {
+      role: 'staff',
+      workshop_id: workshopId || 0,
+    }
+  })
   const editForm = useForm<EditFormValues>()
 
+  // Load workshops for super admin
+  const loadWorkshops = useCallback(async () => {
+    if (!isSuperAdmin) return
+    try {
+      const resp = await workshopsApi.getAll()
+      setWorkshops(resp)
+    } catch {
+      toast.error('Failed to load workshops')
+    }
+  }, [isSuperAdmin])
+
+  // Load users - super admin sees all, others see their workshop
   const loadUsers = useCallback(async () => {
-    if (!workshopId) return
     setLoading(true)
     try {
-      const resp = await usersApi.list(workshopId)
-      setUsers(resp.items.filter((u) => u.role === 'staff' || u.role === 'owner'))
+      let allUsers: UserResponse[] = []
+      
+      if (isSuperAdmin) {
+        // Super admin: fetch users from all workshops
+        const resp = await usersApi.listAll()
+        allUsers = resp.items
+      } else if (workshopId) {
+        // Owner/Staff: fetch only their workshop users
+        const resp = await usersApi.list(workshopId)
+        allUsers = resp.items
+      }
+      
+      // Filter to only show staff and owner roles (not super_admin)
+      setUsers(allUsers.filter((u) => u.role === 'staff' || u.role === 'owner'))
     } catch {
       toast.error('Failed to load team members')
     } finally {
       setLoading(false)
     }
-  }, [workshopId])
+  }, [workshopId, isSuperAdmin])
 
   useEffect(() => {
+    void loadWorkshops()
     void loadUsers()
-  }, [loadUsers])
+  }, [loadWorkshops, loadUsers])
 
   const filteredUsers =
     activeTab === 'all' ? users : users.filter((u) => u.role === activeTab)
 
   const onCreateSubmit = async (data: CreateFormValues) => {
-    if (!workshopId) return
+    // For non-super-admin, use their workshop_id
+    const targetWorkshopId = isSuperAdmin ? data.workshop_id : workshopId
+    
+    if (!targetWorkshopId) {
+      toast.error('Please select a workshop')
+      return
+    }
+    
     try {
       await usersApi.create({
         username: data.username,
@@ -92,7 +134,7 @@ export default function StaffPage() {
         last_name: data.last_name || undefined,
         email: data.email || undefined,
         phone: data.phone || undefined,
-        workshop_id: workshopId,
+        workshop_id: targetWorkshopId,
       })
       toast.success(`${data.role === 'owner' ? 'Owner' : 'Staff member'} created!`)
       createForm.reset()
@@ -155,14 +197,23 @@ export default function StaffPage() {
     setEditUser(user)
   }
 
+  const getWorkshopName = (workshopId: number | null | undefined) => {
+    if (!workshopId) return 'N/A'
+    const workshop = workshops.find(w => w.id === workshopId)
+    return workshop?.name || `Workshop #${workshopId}`
+  }
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-white">Team Management</h1>
+          <h1 className="text-xl font-bold text-white">
+            {isSuperAdmin ? 'User Management' : 'Team Management'}
+          </h1>
           <p className="text-xs text-gray-500 mt-0.5">
             {users.length} member{users.length !== 1 ? 's' : ''}
+            {isSuperAdmin && ' across all workshops'}
           </p>
         </div>
         <Button
@@ -240,6 +291,12 @@ export default function StaffPage() {
                     @{user.username}
                     {user.last_login && ` · Last login ${formatRelative(user.last_login)}`}
                   </p>
+                  {isSuperAdmin && (
+                    <p className="text-xs text-electric-blue/70 flex items-center gap-1 mt-0.5">
+                      <Building2 className="h-3 w-3" />
+                      {getWorkshopName(user.workshop_id)}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -281,6 +338,31 @@ export default function StaffPage() {
       {/* Create modal */}
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Team Member" size="md">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+          {/* Workshop selector for super_admin */}
+          {isSuperAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                Workshop *
+              </label>
+              <select
+                {...createForm.register('workshop_id', { required: 'Required' })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-electric-blue/50"
+              >
+                <option value="">Select a workshop</option>
+                {workshops.map((w) => (
+                  <option key={w.id} value={w.id} className="bg-[#1a1a1a]">
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+              {createForm.formState.errors.workshop_id && (
+                <p className="text-xs text-red-400 mt-1">
+                  {createForm.formState.errors.workshop_id.message}
+                </p>
+              )}
+            </div>
+          )}
+          
           {/* Role selector for super_admin */}
           {isSuperAdmin && (
             <div className="flex items-center gap-3">
@@ -291,7 +373,6 @@ export default function StaffPage() {
                     <input
                       type="radio"
                       value={r}
-                      defaultChecked={r === 'staff'}
                       {...createForm.register('role')}
                       className="accent-electric-blue"
                     />
@@ -301,6 +382,7 @@ export default function StaffPage() {
               </div>
             </div>
           )}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Username *"
