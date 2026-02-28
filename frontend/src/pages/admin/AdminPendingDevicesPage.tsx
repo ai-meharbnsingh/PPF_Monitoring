@@ -87,16 +87,12 @@ export default function AdminPendingDevicesPage() {
       })
 
       const data = res.data
-        toast.success(`Device approved! License: ${data.license_key}`)
-        setSelectedDevice(null)
-        setSelectedWorkshop('')
-        fetchData()
-      } else {
-        const err = await res.json()
-        toast.error(err.detail || 'Failed to approve device')
-      }
-    } catch (error) {
-      toast.error('Error approving device')
+      toast.success(`Device approved! License: ${data.license_key}`)
+      setSelectedDevice(null)
+      setSelectedWorkshop('')
+      fetchData()
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail || 'Error approving device')
     } finally {
       setIsApproving(false)
     }
