@@ -53,8 +53,8 @@ const ROLE_TABS: { key: RoleTab; label: string; icon: React.ReactNode }[] = [
 export default function StaffPage() {
   const workshopId = useAppSelector((s) => s.auth.user?.workshop_id)
   const userRole = useAppSelector((s) => s.auth.user?.role)
-  const isSuperAdmin = userRole === 'super_admin'
-  
+  const isSuperAdmin = typeof userRole === 'string' && userRole.trim().toLowerCase() === 'super_admin'
+
   const [users, setUsers] = useState<UserResponse[]>([])
   const [workshops, setWorkshops] = useState<Workshop[]>([])
   const [loading, setLoading] = useState(true)
@@ -105,7 +105,7 @@ export default function StaffPage() {
     setLoading(true)
     try {
       let allUsers: UserResponse[] = []
-      
+
       if (isSuperAdmin) {
         // Super admin: fetch users from all workshops
         const resp = await usersApi.listAll()
@@ -115,7 +115,7 @@ export default function StaffPage() {
         const resp = await usersApi.list(workshopId)
         allUsers = resp.items
       }
-      
+
       // Filter to only show staff and owner roles (not super_admin)
       setUsers(allUsers.filter((u) => u.role === 'staff' || u.role === 'owner'))
     } catch {
@@ -136,12 +136,12 @@ export default function StaffPage() {
   const onCreateSubmit = async (data: CreateFormValues) => {
     // For non-super-admin, use their workshop_id
     const targetWorkshopId = isSuperAdmin ? data.workshop_id : workshopId
-    
+
     if (!targetWorkshopId) {
       toast.error('Please select a workshop')
       return
     }
-    
+
     try {
       await usersApi.create({
         username: data.username,
@@ -363,7 +363,7 @@ export default function StaffPage() {
             <p className="text-white text-sm">Workshops loaded: <span className="text-cyan-300">{workshops.length}</span></p>
             <p className="text-white text-sm">Workshop names: <span className="text-cyan-300">{workshops.map(w => w.name).join(', ') || 'NONE'}</span></p>
           </div>
-          
+
           {/* Workshop selector - ALWAYS show for now to debug */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">
@@ -371,7 +371,7 @@ export default function StaffPage() {
             </label>
             {workshops.length === 0 ? (
               <div className="text-sm text-amber-400 bg-amber-400/10 border-2 border-amber-400/30 rounded-lg px-3 py-3">
-                ⚠️ No workshops loaded. 
+                ⚠️ No workshops loaded.
                 {!isSuperAdmin && 'Only Super Admin can assign workshops.'}
                 {isSuperAdmin && 'Click "Load Workshops" below or create a workshop in Admin page.'}
               </div>
@@ -402,7 +402,7 @@ export default function StaffPage() {
               </p>
             )}
           </div>
-          
+
           {/* Role selector for super_admin */}
           {isSuperAdmin && (
             <div className="flex items-center gap-4 p-3 bg-[#1a1a1a] border-2 border-gray-600 rounded-lg">
@@ -422,7 +422,7 @@ export default function StaffPage() {
               </div>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Username *"
