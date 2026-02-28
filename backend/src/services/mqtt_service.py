@@ -162,28 +162,39 @@ def _on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> Non
     Runs on the MQTT network thread — submits async work to the event loop.
     """
     topic = message.topic
+    logger.debug(f"MQTT message received on topic: {topic}")
+    
     try:
         payload_str = message.payload.decode("utf-8")
     except UnicodeDecodeError as e:
         logger.error(f"Failed to decode MQTT message on topic '{topic}': {e}")
         return
 
+    if _event_loop is None:
+        logger.error(f"Event loop not set, cannot process message on {topic}")
+        return
+
     # Route to appropriate handler based on topic pattern
     if "/sensors" in topic:
+        logger.debug(f"Routing to sensor handler: {topic}")
         asyncio.run_coroutine_threadsafe(
             _handle_sensor_message(topic, payload_str),
             _event_loop,
         )
     elif "/status" in topic:
+        logger.debug(f"Routing to status handler: {topic}")
         asyncio.run_coroutine_threadsafe(
             _handle_device_status(topic, payload_str),
             _event_loop,
         )
     elif "provisioning/announce" in topic:
+        logger.info(f"Routing to provisioning handler: {topic}, payload: {payload_str[:100]}")
         asyncio.run_coroutine_threadsafe(
             _handle_provisioning_announce(topic, payload_str),
             _event_loop,
         )
+    else:
+        logger.warning(f"Unhandled MQTT topic: {topic}")
 
 
 async def _handle_sensor_message(topic: str, payload_str: str) -> None:
@@ -283,10 +294,15 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
     Handle provisioning announce messages from new ESP32 devices.
     Creates a pending device record if one does not already exist.
     """
+    logger.info(f"_handle_provisioning_announce STARTED: topic={topic}, payload_len={len(payload_str)}")
+    
     try:
         data = json.loads(payload_str)
     except json.JSONDecodeError as e:
         logger.warning(f"Invalid provisioning announce JSON on '{topic}': {e}")
+        return
+    except Exception as e:
+        logger.error(f"Unexpected error parsing provisioning JSON: {e}", exc_info=True)
         return
 
     device_id = data.get("device_id", "")
@@ -338,6 +354,7 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
                     f"Provisioning announce from already-provisioned device "
                     f"{device_id} (status={device.status}), ignoring"
                 )
+        logger.info(f"_handle_provisioning_announce COMPLETED for {device_id}")
     except Exception as e:
         logger.error(f"Error handling provisioning announce: {e}", exc_info=True)
 
