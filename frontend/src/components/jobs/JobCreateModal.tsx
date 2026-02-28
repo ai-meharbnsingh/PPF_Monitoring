@@ -83,6 +83,7 @@ export function JobCreateModal({ isOpen, onClose, workshopId }: JobCreateModalPr
           actual_end_time: created.actual_end_time,
           created_at: created.created_at,
           customer_name: created.customer?.first_name ?? null,
+          tracking_code: created.tracking_code ?? null,
         }),
       )
       toast.success('Job created!')

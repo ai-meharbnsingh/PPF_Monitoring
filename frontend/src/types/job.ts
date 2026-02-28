@@ -66,6 +66,7 @@ export interface JobResponse {
   assigned_staff_ids: number[]
   customer_view_token: string | null
   customer_view_expires_at: string | null
+  tracking_code: string | null
   created_by_user_id: number | null
   created_at: string
   updated_at: string | null

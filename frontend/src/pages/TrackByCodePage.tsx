@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Car, Search, Video, Thermometer, Droplets, Wind } from 'lucide-react'
@@ -31,7 +31,6 @@ interface SensorData {
 }
 
 export default function TrackByCodePage() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initialCode = searchParams.get('code') || ''
   const [code, setCode] = useState(initialCode)
