@@ -344,17 +344,23 @@ export default function StaffPage() {
               <label className="block text-sm font-medium text-gray-400 mb-1.5">
                 Workshop *
               </label>
-              <select
-                {...createForm.register('workshop_id', { required: 'Required' })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-electric-blue/50"
-              >
-                <option value="">Select a workshop</option>
-                {workshops.map((w) => (
-                  <option key={w.id} value={w.id} className="bg-[#1a1a1a]">
-                    {w.name}
-                  </option>
-                ))}
-              </select>
+              {workshops.length === 0 ? (
+                <div className="text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
+                  No workshops found. Please create a workshop first in Admin page.
+                </div>
+              ) : (
+                <select
+                  {...createForm.register('workshop_id', { required: 'Required' })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-electric-blue/50"
+                >
+                  <option value="" className="bg-[#1a1a1a]">Select a workshop</option>
+                  {workshops.map((w) => (
+                    <option key={w.id} value={w.id} className="bg-[#1a1a1a]">
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               {createForm.formState.errors.workshop_id && (
                 <p className="text-xs text-red-400 mt-1">
                   {createForm.formState.errors.workshop_id.message}
