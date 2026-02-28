@@ -476,18 +476,25 @@ export default function AdminPage() {
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">ID</th>
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">Name</th>
                                         <th className="text-left p-3 text-sm font-medium text-gray-400">Email</th>
-                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Owner ID</th>
+                                        <th className="text-left p-3 text-sm font-medium text-gray-400">Owner</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {workshops?.map((ws: Workshop) => (
-                                        <tr key={ws.id}>
-                                            <td className="p-3 text-white">{ws.id}</td>
-                                            <td className="p-3 text-white">{ws.name}</td>
-                                            <td className="p-3 text-gray-400">{ws.contact_email || '-'}</td>
-                                            <td className="p-3 text-gray-400">{ws.owner_user_id || 'Unassigned'}</td>
-                                        </tr>
-                                    ))}
+                                    {workshops?.map((ws: Workshop) => {
+                                        // Find owner name from users list
+                                        const owner = users?.find((u: any) => u.id === ws.owner_user_id)
+                                        const ownerName = owner 
+                                            ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.username
+                                            : (ws.owner_user_id ? `User #${ws.owner_user_id}` : 'Unassigned')
+                                        return (
+                                            <tr key={ws.id}>
+                                                <td className="p-3 text-white">{ws.id}</td>
+                                                <td className="p-3 text-white">{ws.name}</td>
+                                                <td className="p-3 text-gray-400">{ws.contact_email || '-'}</td>
+                                                <td className="p-3 text-gray-400">{ownerName}</td>
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>
