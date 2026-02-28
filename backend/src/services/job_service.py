@@ -39,6 +39,28 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+# ─── Helper: Generate unique 6-digit tracking code ─────────────────────────────
+async def _generate_tracking_code(db: AsyncSession) -> str:
+    """Generate a unique 6-digit tracking code."""
+    import random
+    from sqlalchemy import select
+    
+    max_attempts = 10
+    for _ in range(max_attempts):
+        # Generate random 6-digit number (100000-999999)
+        code = str(random.randint(100000, 999999))
+        
+        # Check if code already exists
+        result = await db.execute(select(Job).where(Job.tracking_code == code))
+        if result.scalar_one_or_none() is None:
+            return code
+    
+    # If we can't find a unique code after max attempts, use timestamp + random
+    import time
+    code = str(int(time.time() % 1000000)).zfill(6)
+    return code
+
+
 # ─── Read ──────────────────────────────────────────────────────────────────────
 async def get_job_by_id(db: AsyncSession, job_id: int) -> Optional[Job]:
     result = await db.execute(
@@ -139,6 +161,9 @@ async def create_job(
     view_token = secrets.token_urlsafe(32)
     view_expires_at = datetime.now(tz=timezone.utc) + timedelta(days=30)
 
+    # Generate 6-digit tracking code
+    tracking_code = await _generate_tracking_code(db)
+
     job = Job(
         workshop_id=workshop_id,
         pit_id=payload.pit_id,
@@ -159,6 +184,7 @@ async def create_job(
         created_by_user_id=created_by_user_id,
         customer_view_token=view_token,
         customer_view_expires_at=view_expires_at,
+        tracking_code=tracking_code,
         assigned_staff_ids_str="[]",
     )
     db.add(job)

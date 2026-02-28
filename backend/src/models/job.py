@@ -81,6 +81,11 @@ class Job(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # 6-digit tracking code for customer access
+    tracking_code: Mapped[Optional[str]] = mapped_column(
+        String(6), unique=True, nullable=True, index=True
+    )
+
     # Notes
     owner_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     staff_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

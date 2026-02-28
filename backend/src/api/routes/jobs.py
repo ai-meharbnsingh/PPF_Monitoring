@@ -300,6 +300,7 @@ async def customer_track_job(
     progress, remaining = compute_job_progress(job.actual_start_time, job.estimated_end_time)
     return {
         "job_id": job.id,
+        "tracking_code": job.tracking_code,
         "work_type": job.work_type,
         "status": job.status,
         "car_model": job.car_model,
@@ -312,4 +313,66 @@ async def customer_track_job(
         "remaining_minutes": remaining,
         "pit_display_name": job.pit.display_name if job.pit else "Bay",
         "workshop_name": job.workshop.name if job.workshop else "",
+        "pit_id": job.pit_id,
+    }
+
+
+# ─── Customer tracking by 6-digit code (no auth) ──────────────────────────────
+@router.get("/track/code/{tracking_code}")
+async def customer_track_job_by_code(
+    tracking_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public endpoint — no auth required.
+    Customer enters 6-digit code to view their car status and live video.
+    """
+    from sqlalchemy import select
+    from src.models.job import Job
+    
+    # Validate code format (6 digits)
+    if not tracking_code.isdigit() or len(tracking_code) != 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tracking code format. Must be 6 digits.",
+        )
+    
+    # Find job by tracking code
+    result = await db.execute(select(Job).where(Job.tracking_code == tracking_code))
+    job = result.scalar_one_or_none()
+    
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tracking code not found",
+        )
+    
+    # Load related objects
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(Job)
+        .where(Job.id == job.id)
+        .options(selectinload(Job.pit), selectinload(Job.workshop))
+    )
+    job = result.scalar_one()
+
+    progress, remaining = compute_job_progress(job.actual_start_time, job.estimated_end_time)
+    return {
+        "job_id": job.id,
+        "tracking_code": job.tracking_code,
+        "work_type": job.work_type,
+        "status": job.status,
+        "car_model": job.car_model,
+        "car_plate": job.car_plate,
+        "car_color": job.car_color,
+        "car_year": job.car_year,
+        "scheduled_start_time": job.scheduled_start_time,
+        "actual_start_time": job.actual_start_time,
+        "estimated_end_time": job.estimated_end_time,
+        "actual_end_time": job.actual_end_time,
+        "progress_percent": progress,
+        "remaining_minutes": remaining,
+        "pit_display_name": job.pit.display_name if job.pit else "Bay",
+        "workshop_name": job.workshop.name if job.workshop else "",
+        "pit_id": job.pit_id,
     }

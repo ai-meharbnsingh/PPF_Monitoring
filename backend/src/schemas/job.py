@@ -149,6 +149,9 @@ class JobResponse(BaseModel):
     customer_view_token: Optional[str]
     customer_view_expires_at: Optional[datetime]
 
+    # 6-digit tracking code for customer access
+    tracking_code: Optional[str]
+
     # Audit
     created_by_user_id: Optional[int]
     created_at: datetime
@@ -164,11 +167,12 @@ class JobResponse(BaseModel):
 class JobTrackingResponse(BaseModel):
     """
     Public response for customer live-tracking page.
-    Accessed via customer_view_token — no auth required.
+    Accessed via customer_view_token or tracking_code — no auth required.
     Contains only public-safe fields.
     """
 
     job_id: int
+    tracking_code: Optional[str]
     work_type: str
     status: str
     car_model: Optional[str]
@@ -179,5 +183,6 @@ class JobTrackingResponse(BaseModel):
     actual_end_time: Optional[datetime]
     pit_display_name: str
     workshop_name: str
+    pit_id: int
 
     model_config = {"from_attributes": True}
