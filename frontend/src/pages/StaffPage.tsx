@@ -355,9 +355,13 @@ export default function StaffPage() {
       {/* Create modal */}
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Team Member" size="md">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-          {/* Debug info - visible */}
-          <div className="text-xs text-gray-500 bg-gray-800/50 rounded px-2 py-1">
-            Role: {userRole} | SuperAdmin: {isSuperAdmin ? 'Yes' : 'No'} | Workshops: {workshops.length}
+          {/* Debug info - HIGHLY VISIBLE */}
+          <div className="bg-yellow-500/20 border-2 border-yellow-500 rounded-lg px-4 py-3 mb-4">
+            <p className="text-yellow-300 font-bold text-sm">DEBUG INFO:</p>
+            <p className="text-white text-sm">Role from Redux: <span className="text-cyan-300">{userRole}</span></p>
+            <p className="text-white text-sm">Is SuperAdmin: <span className={isSuperAdmin ? 'text-green-400' : 'text-red-400'}>{isSuperAdmin ? 'YES ✓' : 'NO ✗'}</span></p>
+            <p className="text-white text-sm">Workshops loaded: <span className="text-cyan-300">{workshops.length}</span></p>
+            <p className="text-white text-sm">Workshop names: <span className="text-cyan-300">{workshops.map(w => w.name).join(', ') || 'NONE'}</span></p>
           </div>
           
           {/* Workshop selector - ALWAYS show for now to debug */}
