@@ -160,18 +160,32 @@ static void enterProvisioningLoop() {
     DEBUG_PRINTLN("═══════════════════════════════════════════════");
     DEBUG_PRINTLN();
 
+    // Wait for network and MQTT before starting provisioning loop
+    DEBUG_PRINTLN("[PROV] Waiting for network connection…");
+    while (!net.ensureConnected()) {
+        delay(500);
+        esp_task_wdt_reset();
+    }
+    DEBUG_PRINTLN("[PROV] Network connected.");
+    
+    // Wait for DHCP to assign IP address
+    delay(1000);
+    DEBUG_PRINTF("[PROV] IP Address: %s\n", net.getIPAddress().c_str());
+    
     mqtt.ensureConnected();
 
     uint32_t lastAnnounce = 0;
     uint32_t lastLedToggle = 0;
     bool ledState = false;
 
-    // Build the announce payload once
+    // Build the announce payload AFTER network is connected
     StaticJsonDocument<256> doc;
     doc["device_id"]        = deviceConfig.getDeviceId();
     doc["mac"]              = deviceConfig.getMacAddress();
     doc["firmware_version"] = FIRMWARE_VER;
-    doc["ip"]               = net.getIPAddress().c_str();
+    // Must store String in variable - .c_str() on temporary is dangling!
+    String ipStr = net.getIPAddress();
+    doc["ip"]               = ipStr.c_str();
     char announceBuf[256];
     serializeJson(doc, announceBuf, sizeof(announceBuf));
 
@@ -188,8 +202,9 @@ static void enterProvisioningLoop() {
         // Announce periodically
         if (now - lastAnnounce >= PROV_ANNOUNCE_INTERVAL_MS) {
             lastAnnounce = now;
-            // Update IP in case it changed
-            doc["ip"] = net.getIPAddress().c_str();
+            // Update IP in case it changed (store String to avoid dangling pointer)
+            String currentIp = net.getIPAddress();
+            doc["ip"] = currentIp.c_str();
             serializeJson(doc, announceBuf, sizeof(announceBuf));
             mqtt.publishAnnounce(announceBuf);
             DEBUG_PRINTF("[PROV] Announced: %s\n", announceBuf);

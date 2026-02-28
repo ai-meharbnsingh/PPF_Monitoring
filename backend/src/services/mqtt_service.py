@@ -294,6 +294,8 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
     fw_version = data.get("firmware_version", "")
     ip_address = data.get("ip", "")
 
+    logger.info(f"Processing provisioning announce: device_id={device_id}, mac={mac}, ip={ip_address}")
+
     if not device_id:
         logger.warning("Provisioning announce missing device_id, ignoring")
         return
@@ -320,7 +322,7 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
                     last_seen=utc_now(),
                 )
                 db.add(device)
-                await db.commit()
+                # Commit handled by get_db_context() on exit
                 logger.info(f"New pending device detected: {device_id}")
             elif device.status == "pending":
                 # Already pending -- update last_seen
@@ -328,7 +330,7 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
                 device.ip_address = ip_address
                 device.firmware_version = fw_version
                 device.is_online = True
-                await db.commit()
+                # Commit handled by get_db_context() on exit
                 logger.debug(f"Pending device re-announced: {device_id}")
             else:
                 # Already provisioned (active/disabled/etc) -- ignore
