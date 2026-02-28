@@ -105,10 +105,19 @@ if settings.is_development:
         allow_headers=["*"],
     )
 else:
-    logger.info(f"CORS: Using configured origins: {settings.CORS_ORIGINS}")
+    # Production: Add Vercel frontend to allowed origins
+    cors_origins = settings.CORS_ORIGINS.copy()
+    vercel_origins = [
+        "https://ppf-monitoring.vercel.app",
+        "https://ppf-monitoring-*.vercel.app",  # Preview deployments
+    ]
+    for origin in vercel_origins:
+        if origin not in cors_origins:
+            cors_origins.append(origin)
+    logger.info(f"CORS: Using origins: {cors_origins}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
