@@ -63,6 +63,7 @@ class WorkshopSummary(BaseModel):
     subscription_plan: str
     subscription_status: str
     is_active: bool
+    owner_user_id: Optional[int] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -511,12 +511,16 @@ export default function AdminPage() {
                                         const ownerName = owner 
                                             ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.username
                                             : (ws.owner_user_id ? `User #${ws.owner_user_id}` : 'Unassigned')
+                                        console.log('Workshop row:', ws.id, ws.name, 'owner_user_id:', ws.owner_user_id, 'ownerName:', ownerName, 'users loaded:', users?.length)
                                         return (
                                             <tr key={ws.id}>
                                                 <td className="p-3 text-white">{ws.id}</td>
                                                 <td className="p-3 text-white">{ws.name}</td>
                                                 <td className="p-3 text-gray-400">{ws.contact_email || '-'}</td>
-                                                <td className="p-3 text-gray-400">{ownerName}</td>
+                                                <td className="p-3 text-gray-400">
+                                                    {ownerName}
+                                                    <span className="text-xs text-gray-600 block">ID: {ws.owner_user_id || 'NULL'}</span>
+                                                </td>
                                                 <td className="p-3">
                                                     <Button
                                                         size="sm"
