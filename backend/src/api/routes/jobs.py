@@ -84,6 +84,7 @@ def _job_to_response(job) -> dict:
         "assigned_staff_ids": staff_ids,
         "customer_view_token": job.customer_view_token,
         "customer_view_expires_at": job.customer_view_expires_at,
+        "tracking_code": job.tracking_code,
         "created_by_user_id": job.created_by_user_id,
         "created_at": job.created_at,
         "updated_at": job.updated_at,
