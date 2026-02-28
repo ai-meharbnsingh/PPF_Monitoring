@@ -87,9 +87,16 @@ export default function StaffPage() {
       const resp = await workshopsApi.getAll()
       console.log('Workshops loaded:', resp)
       setWorkshops(resp)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load workshops:', err)
-      toast.error('Failed to load workshops')
+      console.error('Error details:', {
+        message: err?.message,
+        status: err?.response?.status,
+        statusText: err?.response?.statusText,
+        data: err?.response?.data,
+        url: err?.config?.url,
+      })
+      toast.error(`Failed to load workshops: ${err?.response?.status || ''} ${err?.message || 'Unknown error'}`)
     }
   }, [isSuperAdmin])
 
