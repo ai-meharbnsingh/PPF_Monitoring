@@ -25,6 +25,7 @@ class WorkshopCreate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
     timezone: str = Field(default="Asia/Kolkata", max_length=50)
+    owner_user_id: Optional[int] = Field(None, description="User ID to assign as workshop owner")
 
     @field_validator("name")
     @classmethod
@@ -46,6 +47,7 @@ class WorkshopUpdate(BaseModel):
     email: Optional[EmailStr] = None
     timezone: Optional[str] = Field(None, max_length=50)
     is_active: Optional[bool] = None
+    owner_user_id: Optional[int] = Field(None, description="User ID to assign as workshop owner")
 
 
 # ─── Responses ────────────────────────────────────────────────────────────────

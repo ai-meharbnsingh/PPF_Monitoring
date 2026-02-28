@@ -75,6 +75,7 @@ async def create_workshop(
         phone=payload.phone,
         email=payload.email,
         timezone=payload.timezone,
+        owner_user_id=payload.owner_user_id,
     )
     db.add(workshop)
     await db.flush()  # get ID before default AlertConfig
@@ -86,7 +87,7 @@ async def create_workshop(
     await db.commit()
     await db.refresh(workshop)
 
-    logger.info(f"Workshop created: id={workshop.id} name='{workshop.name}' slug='{workshop.slug}'")
+    logger.info(f"Workshop created: id={workshop.id} name='{workshop.name}' slug='{workshop.slug}' owner={payload.owner_user_id}")
     return workshop
 
 
