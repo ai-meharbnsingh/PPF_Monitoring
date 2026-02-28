@@ -8,6 +8,8 @@ import {
   Users,
   ShieldCheck,
   X,
+  Clock,
+  List,
 } from 'lucide-react'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import type { UserRole } from '@/types/common'
@@ -54,6 +56,18 @@ const NAV_ITEMS: NavItem[] = [
     to: '/admin/metrics',
     label: 'Admin',
     icon: <ShieldCheck className="h-5 w-5" />,
+    roles: ['super_admin'],
+  },
+  {
+    to: '/admin/devices/pending',
+    label: 'Pending Devices',
+    icon: <Clock className="h-5 w-5" />,
+    roles: ['super_admin'],
+  },
+  {
+    to: '/admin/devices/assignments',
+    label: 'Device Assignments',
+    icon: <List className="h-5 w-5" />,
     roles: ['super_admin'],
   },
 ]

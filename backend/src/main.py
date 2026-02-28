@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import (
     admin,
+    admin_devices,
     alerts,
     auth,
     devices,
@@ -144,6 +145,7 @@ app.include_router(firmware.router, prefix=API)
 
 # Admin utilities
 app.include_router(admin.router, prefix=API)
+app.include_router(admin_devices.router, prefix=API)
 
 
 @app.get("/")

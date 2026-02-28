@@ -20,6 +20,8 @@ const DevicesPage = lazy(() => import('@/pages/DevicesPage'))
 const StaffPage = lazy(() => import('@/pages/StaffPage'))
 const TrackingPage = lazy(() => import('@/pages/TrackingPage'))
 const AdminPage = lazy(() => import('@/pages/AdminPage'))
+const AdminPendingDevicesPage = lazy(() => import('@/pages/admin/AdminPendingDevicesPage'))
+const AdminDeviceAssignmentsPage = lazy(() => import('@/pages/admin/AdminDeviceAssignmentsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function Lazy({ element }: { element: React.ReactNode }) {
@@ -105,6 +107,25 @@ const router = createBrowserRouter([
           {
             path: 'metrics',
             element: <Lazy element={<AdminPage />} />,
+          },
+        ],
+      },
+
+      // ── Super admin only ──────────────────────────────────────────────────────
+      {
+        element: (
+          <ProtectedRoute requiredRoles={['super_admin']}>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: 'devices/pending',
+            element: <Lazy element={<AdminPendingDevicesPage />} />,
+          },
+          {
+            path: 'devices/assignments',
+            element: <Lazy element={<AdminDeviceAssignmentsPage />} />,
           },
         ],
       },
