@@ -22,6 +22,7 @@ from src.models.device import Device
 from src.models.pit import Pit
 from src.models.sensor_data import SensorData
 from src.models.user import User
+from src.utils.helpers import utc_now
 from src.schemas.common import build_paginated
 from src.schemas.sensor_data import LatestSensorSummary, SensorReadingResponse, SensorStatsResponse
 from src.utils.constants import UserRole
@@ -216,6 +217,7 @@ async def _get_thresholds(db: AsyncSession, workshop_id: int) -> dict:
             "pm25_critical": cfg.pm25_critical,
             "iaq_warning": cfg.iaq_warning,
             "iaq_critical": cfg.iaq_critical,
+            "device_offline_threshold_seconds": cfg.device_offline_threshold_seconds,
         }
     return {
         "temp_min": _DEFAULT_TEMP_MIN,
@@ -225,10 +227,24 @@ async def _get_thresholds(db: AsyncSession, workshop_id: int) -> dict:
         "pm25_critical": _DEFAULT_PM25_CRITICAL,
         "iaq_warning": _DEFAULT_IAQ_WARNING,
         "iaq_critical": _DEFAULT_IAQ_CRITICAL,
+        "device_offline_threshold_seconds": 60,  # Default 60 seconds
     }
 
 
+def _is_device_online(device: Optional[Device], threshold_seconds: int) -> bool:
+    """Check if device is online based on last_seen vs threshold."""
+    if device is None:
+        return False
+    if device.last_seen is None:
+        return False
+    from src.utils.helpers import utc_now
+    elapsed = (utc_now() - device.last_seen).total_seconds()
+    return elapsed < threshold_seconds
+
+
 async def _build_latest_summary(db: AsyncSession, pit: Pit, thresholds: dict) -> dict:
+    from src.models.pit_alert_config import PitAlertConfig
+    
     result = await db.execute(
         select(SensorData)
         .where(SensorData.pit_id == pit.id, SensorData.is_valid.is_(True))
@@ -237,12 +253,26 @@ async def _build_latest_summary(db: AsyncSession, pit: Pit, thresholds: dict) ->
     )
     reading = result.scalar_one_or_none()
     device = pit.device
+    
+    # Get per-pit alert config to check for threshold override
+    pit_config_result = await db.execute(
+        select(PitAlertConfig).where(PitAlertConfig.pit_id == pit.id)
+    )
+    pit_config = pit_config_result.scalar_one_or_none()
+    
+    # Resolve offline threshold: pit config -> workshop config -> default
+    offline_threshold = thresholds.get("device_offline_threshold_seconds", 60)
+    if pit_config and pit_config.device_offline_threshold_seconds is not None:
+        offline_threshold = pit_config.device_offline_threshold_seconds
+    
+    # Determine online status based on last_seen vs threshold
+    is_device_online = _is_device_online(device, offline_threshold)
 
     if reading is None:
         return {
             "pit_id": pit.id,
             "device_id": device.device_id if device else None,
-            "is_device_online": device.is_online if device else False,
+            "is_device_online": is_device_online,
             "temperature": None,
             "humidity": None,
             "pm25": None,
@@ -261,7 +291,7 @@ async def _build_latest_summary(db: AsyncSession, pit: Pit, thresholds: dict) ->
     return {
         "pit_id": pit.id,
         "device_id": device.device_id if device else None,
-        "is_device_online": device.is_online if device else False,
+        "is_device_online": is_device_online,
         "temperature": reading.temperature,
         "humidity": reading.humidity,
         "pm25": reading.pm25,

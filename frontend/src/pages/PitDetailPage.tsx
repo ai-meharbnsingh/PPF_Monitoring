@@ -272,10 +272,17 @@ export default function PitDetailPage() {
               </div>
             </>
           ) : (
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-              <WifiOff className="h-3.5 w-3.5" />
-              Device Offline
-            </span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-full">
+              <WifiOff className="h-3.5 w-3.5 text-red-400" />
+              <span className="text-xs text-red-400 font-medium">
+                Device Offline
+              </span>
+              {sensors?.last_reading_at && (
+                <span className="text-xs text-gray-500">
+                  · Last seen {formatRelative(sensors.last_reading_at)}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -290,62 +297,78 @@ export default function PitDetailPage() {
         {/* LEFT: Live readings + History chart ─────────────────────── */}
         <div className="space-y-5">
           {/* Live readings card */}
-          <div className={clsx('card border transition-colors duration-300', colors.border)}>
+          <div className={clsx('card border transition-colors duration-300', isOnline ? colors.border : 'border-gray-700/50')}>
             <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
               <p className="text-sm font-semibold text-white">Live Readings</p>
               {sensors?.last_reading_at && (
                 <span className="text-[10px] text-gray-600">
-                  Updated {formatRelative(sensors.last_reading_at)}
+                  {isOnline 
+                    ? `Updated ${formatRelative(sensors.last_reading_at)}`
+                    : `Offline since ${formatRelative(sensors.last_reading_at)}`}
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2 p-4">
+            <div className="grid grid-cols-2 gap-2 p-4 relative">
+              {/* Offline overlay */}
+              {!isOnline && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-lg">
+                  <div className="text-center">
+                    <WifiOff className="h-10 w-10 text-gray-500 mx-auto mb-3" />
+                    <p className="text-base text-gray-300 font-semibold">Device Offline</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {sensors?.last_reading_at
+                        ? `Last seen ${formatRelative(sensors.last_reading_at)}`
+                        : 'Waiting for data...'}
+                    </p>
+                  </div>
+                </div>
+              )}
               <SensorTile
                 metric="temperature"
                 value={sensors?.temperature ?? null}
-                status={sensors?.temp_status ?? 'unknown'}
+                status={isOnline ? (sensors?.temp_status ?? 'unknown') : 'unknown'}
               />
               <SensorTile
                 metric="humidity"
                 value={sensors?.humidity ?? null}
-                status={sensors?.humidity_status ?? 'unknown'}
+                status={isOnline ? (sensors?.humidity_status ?? 'unknown') : 'unknown'}
               />
               <SensorTile
                 metric="pm25"
                 value={sensors?.pm25 ?? null}
-                status={sensors?.pm25_status ?? 'unknown'}
+                status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
               />
               <SensorTile
                 metric="pm10"
                 value={sensors?.pm10 ?? null}
-                status={sensors?.pm10_status ?? 'unknown'}
+                status={isOnline ? (sensors?.pm10_status ?? 'unknown') : 'unknown'}
               />
               {sensors?.pm1 != null && (
                 <SensorTile
                   metric="pm1"
                   value={sensors.pm1}
-                  status={sensors?.pm25_status ?? 'unknown'}
+                  status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
                 />
               )}
               {sensors?.pressure != null && (
                 <SensorTile
                   metric="pressure"
                   value={sensors.pressure}
-                  status="good"
+                  status={isOnline ? 'good' : 'unknown'}
                 />
               )}
               {sensors?.gas_resistance != null && (
                 <SensorTile
                   metric="gas_resistance"
                   value={Math.round(sensors.gas_resistance / 1000)}
-                  status="good"
+                  status={isOnline ? 'good' : 'unknown'}
                 />
               )}
               {sensors?.iaq != null && (
                 <SensorTile
                   metric="iaq"
                   value={sensors.iaq}
-                  status={sensors.iaq_status}
+                  status={isOnline ? (sensors.iaq_status ?? 'unknown') : 'unknown'}
                   className="col-span-2"
                 />
               )}
@@ -398,17 +421,34 @@ export default function PitDetailPage() {
 
               {/* ── Sensor overlay — top right ── */}
               <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                {/* Device offline indicator overlay */}
+                {!isOnline && (
+                  <div className={overlayCard} style={overlayCardStyle}>
+                    <div className="p-1.5 rounded-lg bg-red-500/10 shrink-0">
+                      <WifiOff className="h-4 w-4 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-medium text-red-400 uppercase tracking-[0.15em] leading-none mb-1">
+                        Device Status
+                      </p>
+                      <p className="text-sm font-mono font-bold text-red-300 leading-none">
+                        OFFLINE
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Temperature */}
                 <div className={overlayCard} style={overlayCardStyle}>
-                  <div className="p-1.5 rounded-lg bg-electric-blue/10 shrink-0">
-                    <Thermometer className="h-4 w-4 text-electric-blue" />
+                  <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-electric-blue/10" : "bg-gray-700/30")}>
+                    <Thermometer className={clsx("h-4 w-4", isOnline ? "text-electric-blue" : "text-gray-500")} />
                   </div>
                   <div>
                     <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                       Temperature
                     </p>
                     <p className="text-sm font-mono font-bold text-white leading-none">
-                      {sensors?.temperature != null
+                      {isOnline && sensors?.temperature != null
                         ? `${sensors.temperature.toFixed(1)}°C`
                         : '—'}
                     </p>
@@ -417,15 +457,15 @@ export default function PitDetailPage() {
 
                 {/* Humidity */}
                 <div className={overlayCard} style={overlayCardStyle}>
-                  <div className="p-1.5 rounded-lg bg-blue-500/10 shrink-0">
-                    <Droplets className="h-4 w-4 text-blue-400" />
+                  <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-blue-500/10" : "bg-gray-700/30")}>
+                    <Droplets className={clsx("h-4 w-4", isOnline ? "text-blue-400" : "text-gray-500")} />
                   </div>
                   <div>
                     <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                       Humidity
                     </p>
                     <p className="text-sm font-mono font-bold text-white leading-none">
-                      {sensors?.humidity != null
+                      {isOnline && sensors?.humidity != null
                         ? `${sensors.humidity.toFixed(0)}%`
                         : '—'}
                     </p>
@@ -433,80 +473,96 @@ export default function PitDetailPage() {
                 </div>
 
                 {/* PM2.5 */}
-                {sensors?.pm25 != null && (
+                {(isOnline || sensors?.pm25 != null) && (
                   <div className={overlayCard} style={overlayCardStyle}>
-                    <div className="p-1.5 rounded-lg bg-orange-500/10 shrink-0">
-                      <Wind className="h-4 w-4 text-orange-400" />
+                    <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-orange-500/10" : "bg-gray-700/30")}>
+                      <Wind className={clsx("h-4 w-4", isOnline ? "text-orange-400" : "text-gray-500")} />
                     </div>
                     <div>
                       <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                         PM2.5
                       </p>
                       <p className="text-sm font-mono font-bold text-white leading-none">
-                        {sensors.pm25.toFixed(1)}{' '}
-                        <span className="text-[9px] text-gray-500 font-normal">
-                          μg/m³
-                        </span>
+                        {isOnline && sensors?.pm25 != null ? (
+                          <>
+                            {sensors.pm25.toFixed(1)}{' '}
+                            <span className="text-[9px] text-gray-500 font-normal">
+                              μg/m³
+                            </span>
+                          </>
+                        ) : '—'}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* PM10 */}
-                {sensors?.pm10 != null && (
+                {(isOnline || sensors?.pm10 != null) && (
                   <div className={overlayCard} style={overlayCardStyle}>
-                    <div className="p-1.5 rounded-lg bg-purple-500/10 shrink-0">
-                      <Wind className="h-4 w-4 text-purple-400" />
+                    <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-purple-500/10" : "bg-gray-700/30")}>
+                      <Wind className={clsx("h-4 w-4", isOnline ? "text-purple-400" : "text-gray-500")} />
                     </div>
                     <div>
                       <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                         PM10
                       </p>
                       <p className="text-sm font-mono font-bold text-white leading-none">
-                        {sensors.pm10.toFixed(1)}{' '}
-                        <span className="text-[9px] text-gray-500 font-normal">
-                          μg/m³
-                        </span>
+                        {isOnline && sensors?.pm10 != null ? (
+                          <>
+                            {sensors.pm10.toFixed(1)}{' '}
+                            <span className="text-[9px] text-gray-500 font-normal">
+                              μg/m³
+                            </span>
+                          </>
+                        ) : '—'}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* IAQ — only when sensor is reporting */}
-                {sensors?.iaq != null && (
+                {(isOnline || sensors?.iaq != null) && (
                   <div className={overlayCard} style={overlayCardStyle}>
-                    <div className="p-1.5 rounded-lg bg-purple-500/10 shrink-0">
-                      <Gauge className="h-4 w-4 text-purple-400" />
+                    <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-purple-500/10" : "bg-gray-700/30")}>
+                      <Gauge className={clsx("h-4 w-4", isOnline ? "text-purple-400" : "text-gray-500")} />
                     </div>
                     <div>
                       <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                         Air Quality Index
                       </p>
                       <p className="text-sm font-mono font-bold text-white leading-none">
-                        {sensors.iaq.toFixed(0)}{' '}
-                        <span className="text-[9px] text-gray-500 font-normal">
-                          IAQ
-                        </span>
+                        {isOnline && sensors?.iaq != null ? (
+                          <>
+                            {sensors.iaq.toFixed(0)}{' '}
+                            <span className="text-[9px] text-gray-500 font-normal">
+                              IAQ
+                            </span>
+                          </>
+                        ) : '—'}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Pressure — only when BME688 is reporting */}
-                {sensors?.pressure != null && (
+                {(isOnline || sensors?.pressure != null) && (
                   <div className={overlayCard} style={overlayCardStyle}>
-                    <div className="p-1.5 rounded-lg bg-amber-500/10 shrink-0">
-                      <BarChart3 className="h-4 w-4 text-amber-400" />
+                    <div className={clsx("p-1.5 rounded-lg shrink-0", isOnline ? "bg-amber-500/10" : "bg-gray-700/30")}>
+                      <BarChart3 className={clsx("h-4 w-4", isOnline ? "text-amber-400" : "text-gray-500")} />
                     </div>
                     <div>
                       <p className="text-[9px] font-medium text-gray-400 uppercase tracking-[0.15em] leading-none mb-1">
                         Pressure
                       </p>
                       <p className="text-sm font-mono font-bold text-white leading-none">
-                        {sensors.pressure.toFixed(1)}{' '}
-                        <span className="text-[9px] text-gray-500 font-normal">
-                          hPa
-                        </span>
+                        {isOnline && sensors?.pressure != null ? (
+                          <>
+                            {sensors.pressure.toFixed(1)}{' '}
+                            <span className="text-[9px] text-gray-500 font-normal">
+                              hPa
+                            </span>
+                          </>
+                        ) : '—'}
                       </p>
                     </div>
                   </div>

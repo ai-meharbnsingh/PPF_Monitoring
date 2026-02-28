@@ -200,7 +200,7 @@ async def send_device_command(
     await db.flush()
 
     try:
-        await publish_device_command(
+        publish_device_command(
             workshop_id=device.workshop_id,
             device_id=device.device_id,
             command=request.command.value,
