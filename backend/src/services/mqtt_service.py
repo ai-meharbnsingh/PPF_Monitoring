@@ -311,7 +311,10 @@ async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
     device_id = data.get("device_id", "")
     mac = data.get("mac", "")
     fw_version = data.get("firmware_version", "")
-    ip_address = data.get("ip", "")
+    # Strip null bytes that a buggy firmware build may embed in the IP string.
+    # PostgreSQL rejects \x00 in varchar columns and silently kills the insert.
+    raw_ip = data.get("ip", "") or ""
+    ip_address = raw_ip.replace("\x00", "").strip() or None
 
     logger.warning(f"PROV-DATA-EXTRACTED: device_id={device_id}, mac={mac}, ip={ip_address}")
 

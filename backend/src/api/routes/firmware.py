@@ -172,10 +172,14 @@ async def trigger_ota(
             detail="No firmware release found",
         )
 
-    # Build the download URL the ESP32 will use
-    # Use the server's base URL so the ESP32 can reach it on the local network
-    base_url = f"http://{settings.SERVER_HOST}:{settings.SERVER_PORT}{settings.API_PREFIX}"
-    firmware_url = f"{base_url}/firmware/download/{release.version}"
+    # Build the download URL the ESP32 will use.
+    # Prefer BACKEND_BASE_URL (set on Render/cloud) so the URL is publicly
+    # reachable from the device.  Fall back to localhost for local dev.
+    backend_base = (
+        settings.BACKEND_BASE_URL
+        or f"http://{settings.SERVER_HOST}:{settings.SERVER_PORT}"
+    )
+    firmware_url = f"{backend_base}{settings.API_PREFIX}/firmware/download/{release.version}"
 
     success = firmware_service.trigger_device_ota(
         workshop_id=device.workshop_id,
