@@ -337,16 +337,14 @@ export default function AdminDeviceAssignmentsPage() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {!assignment.pit_id && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            leftIcon={<MapPin className="h-3 w-3" />}
-                            onClick={() => handleOpenAssign(assignment)}
-                          >
-                            Assign Pit
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          leftIcon={<MapPin className="h-3 w-3" />}
+                          onClick={() => handleOpenAssign(assignment)}
+                        >
+                          {assignment.pit_id ? 'Change Pit' : 'Assign Pit'}
+                        </Button>
                         <Button
                           size="sm"
                           variant="danger"

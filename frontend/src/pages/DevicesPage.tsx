@@ -220,52 +220,50 @@ export default function DevicesPage() {
                 device={device}
                 onSendCommand={setCommandDevice}
               />
-              {/* Assign to Pit button for devices without a pit */}
-              {!device.pit_id && (
-                <div className="mt-1 ml-2 mb-3">
-                  {assigningDeviceId === device.device_id ? (
-                    <div className="flex items-center gap-2">
-                      {pits.length === 0 ? (
-                        <span className="text-xs text-gray-500 italic">No pits — create one on Dashboard first</span>
-                      ) : (
-                        <select
-                          value={assignPitId}
-                          onChange={(e) => setAssignPitId(e.target.value)}
-                          className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                        >
-                          <option value="">Select a pit…</option>
-                          {pits.map((p) => (
-                            <option key={p.id} value={String(p.id)}>
-                              Pit #{p.pit_number} — {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      <button
-                        onClick={() => handleAssign(device.device_id)}
-                        disabled={assignMutation.isPending}
-                        className="bg-electric-blue text-black font-semibold px-3 py-1.5 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors text-sm"
+              {/* Assign / Change Pit — always visible */}
+              <div className="mt-1 ml-2 mb-3">
+                {assigningDeviceId === device.device_id ? (
+                  <div className="flex items-center gap-2">
+                    {pits.length === 0 ? (
+                      <span className="text-xs text-gray-500 italic">No pits — create one on Dashboard first</span>
+                    ) : (
+                      <select
+                        value={assignPitId}
+                        onChange={(e) => setAssignPitId(e.target.value)}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
                       >
-                        {assignMutation.isPending ? 'Assigning...' : 'Confirm'}
-                      </button>
-                      <button
-                        onClick={() => { setAssigningDeviceId(null); setAssignPitId('') }}
-                        className="text-gray-400 hover:text-white text-sm px-2 py-1.5 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
+                        <option value="">Select a pit…</option>
+                        {pits.map((p) => (
+                          <option key={p.id} value={String(p.id)}>
+                            Pit #{p.pit_number} — {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <button
-                      onClick={() => setAssigningDeviceId(device.device_id)}
-                      className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                      onClick={() => handleAssign(device.device_id)}
+                      disabled={assignMutation.isPending}
+                      className="bg-electric-blue text-black font-semibold px-3 py-1.5 rounded-lg hover:bg-electric-blue/90 disabled:opacity-50 transition-colors text-sm"
                     >
-                      <MapPin className="h-3.5 w-3.5" />
-                      Assign to Pit
+                      {assignMutation.isPending ? 'Assigning...' : 'Confirm'}
                     </button>
-                  )}
-                </div>
-              )}
+                    <button
+                      onClick={() => { setAssigningDeviceId(null); setAssignPitId('') }}
+                      className="text-gray-400 hover:text-white text-sm px-2 py-1.5 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAssigningDeviceId(device.device_id)}
+                    className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    {device.pit_id ? 'Change Pit' : 'Assign to Pit'}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
