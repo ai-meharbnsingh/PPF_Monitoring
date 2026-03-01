@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
 import { setDevices, setDevicesLoading } from '@/store/slices/devicesSlice'
 import { devicesApi } from '@/api/devices'
+import { pitsApi } from '@/api/pits'
+import type { PitSummary } from '@/types'
 import { DeviceCard } from '@/components/devices/DeviceCard'
 import { DeviceCommandModal } from '@/components/devices/DeviceCommandModal'
 import { DeviceRegisterModal } from '@/components/devices/DeviceRegisterModal'
@@ -23,6 +25,7 @@ export default function DevicesPage() {
   const [registerOpen, setRegisterOpen] = useState(false)
   const [assigningDeviceId, setAssigningDeviceId] = useState<string | null>(null)
   const [assignPitId, setAssignPitId] = useState('')
+  const [pits, setPits] = useState<PitSummary[]>([])
 
   const loadDevices = useCallback(async () => {
     if (!workshopId) return
@@ -38,6 +41,12 @@ export default function DevicesPage() {
   useEffect(() => {
     void loadDevices()
   }, [loadDevices])
+
+  // Load pits for the dropdown
+  useEffect(() => {
+    if (!workshopId) return
+    pitsApi.listPits(workshopId).then(setPits).catch(() => setPits([]))
+  }, [workshopId])
 
   // Fetch pending devices
   const { data: pendingDevices, isLoading: pendingLoading } = useQuery({
@@ -95,7 +104,7 @@ export default function DevicesPage() {
   const handleAssign = (deviceId: string) => {
     const pitId = parseInt(assignPitId)
     if (!workshopId || !pitId) {
-      toast.error('Please enter a valid Pit ID')
+      toast.error('Please select a pit')
       return
     }
     assignMutation.mutate({ deviceId, wsId: workshopId, pitId })
@@ -216,14 +225,22 @@ export default function DevicesPage() {
                 <div className="mt-1 ml-2 mb-3">
                   {assigningDeviceId === device.device_id ? (
                     <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        value={assignPitId}
-                        onChange={(e) => setAssignPitId(e.target.value)}
-                        placeholder="Pit ID"
-                        className="w-24 bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
-                      />
+                      {pits.length === 0 ? (
+                        <span className="text-xs text-gray-500 italic">No pits — create one on Dashboard first</span>
+                      ) : (
+                        <select
+                          value={assignPitId}
+                          onChange={(e) => setAssignPitId(e.target.value)}
+                          className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+                        >
+                          <option value="">Select a pit…</option>
+                          {pits.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              Pit #{p.pit_number} — {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <button
                         onClick={() => handleAssign(device.device_id)}
                         disabled={assignMutation.isPending}

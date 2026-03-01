@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '@/hooks/useAppDispatch'
+import { devicesApi } from '@/api/devices'
+import { pitsApi } from '@/api/pits'
+import type { PitSummary } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -39,6 +42,13 @@ export default function AdminDeviceAssignmentsPage() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceAssignment | null>(null)
   const [isUnassigning, setIsUnassigning] = useState(false)
 
+  // Assign-to-pit modal state
+  const [assignDevice, setAssignDevice] = useState<DeviceAssignment | null>(null)
+  const [pitsForAssign, setPitsForAssign] = useState<PitSummary[]>([])
+  const [pitsLoading, setPitsLoading] = useState(false)
+  const [selectedPitId, setSelectedPitId] = useState('')
+  const [isAssigning, setIsAssigning] = useState(false)
+
   useEffect(() => {
     if (userRole !== 'super_admin') {
       navigate('/dashboard')
@@ -75,6 +85,52 @@ export default function AdminDeviceAssignmentsPage() {
   useEffect(() => {
     fetchData()
   }, [selectedWorkshop])
+
+  const handleOpenAssign = async (device: DeviceAssignment) => {
+    setAssignDevice(device)
+    setSelectedPitId('')
+    if (!device.workshop_id) {
+      setPitsForAssign([])
+      return
+    }
+    setPitsLoading(true)
+    try {
+      const pitList = await pitsApi.listPits(device.workshop_id)
+      setPitsForAssign(pitList)
+    } catch {
+      toast.error('Failed to load pits for this workshop')
+      setPitsForAssign([])
+    } finally {
+      setPitsLoading(false)
+    }
+  }
+
+  const handleAssignToPit = async () => {
+    if (!assignDevice || !selectedPitId) {
+      toast.error('Please select a pit')
+      return
+    }
+    const pitId = parseInt(selectedPitId)
+    const workshopId = assignDevice.workshop_id
+    if (!workshopId || !pitId) return
+
+    setIsAssigning(true)
+    try {
+      await devicesApi.assign(assignDevice.device_id, workshopId, pitId)
+      toast.success('Device assigned to pit successfully!')
+      setAssignDevice(null)
+      setSelectedPitId('')
+      fetchData()
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.detail?.[0]?.msg ||
+        error?.response?.data?.detail ||
+        'Failed to assign device to pit'
+      )
+    } finally {
+      setIsAssigning(false)
+    }
+  }
 
   const handleUnassign = async () => {
     if (!selectedDevice) return
@@ -280,14 +336,26 @@ export default function AdminDeviceAssignmentsPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        leftIcon={<Unlink className="h-3 w-3" />}
-                        onClick={() => setSelectedDevice(assignment)}
-                      >
-                        Unassign
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        {!assignment.pit_id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            leftIcon={<MapPin className="h-3 w-3" />}
+                            onClick={() => handleOpenAssign(assignment)}
+                          >
+                            Assign Pit
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          leftIcon={<Unlink className="h-3 w-3" />}
+                          onClick={() => setSelectedDevice(assignment)}
+                        >
+                          Unassign
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -296,6 +364,78 @@ export default function AdminDeviceAssignmentsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Assign to Pit Modal ──────────────────────────────────────────────── */}
+      <Modal
+        isOpen={!!assignDevice}
+        onClose={() => { setAssignDevice(null); setSelectedPitId('') }}
+        title="Assign Device to Pit"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">
+            Select a pit in <span className="text-white font-medium">{assignDevice?.workshop_name || 'this workshop'}</span> to assign this device to.
+          </p>
+
+          {assignDevice && (
+            <div className="bg-black/30 p-3 rounded-lg text-sm space-y-1">
+              <p>
+                <span className="text-gray-500">Device:</span>{' '}
+                <span className="text-white font-mono">{assignDevice.device_id}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Workshop:</span>{' '}
+                <span className="text-white">{assignDevice.workshop_name || '-'}</span>
+              </p>
+            </div>
+          )}
+
+          {pitsLoading ? (
+            <p className="text-sm text-gray-400">Loading pits…</p>
+          ) : pitsForAssign.length === 0 ? (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-sm text-amber-400">
+                No pits found for this workshop. Ask the workshop owner to create pits on their Dashboard first.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Select Pit <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={selectedPitId}
+                onChange={(e) => setSelectedPitId(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-electric-blue focus:ring-1 focus:ring-electric-blue outline-none transition-all"
+              >
+                <option value="">Choose a pit…</option>
+                {pitsForAssign.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    Pit #{p.pit_number} — {p.name}
+                    {p.device ? ' (occupied)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              className="flex-1"
+              onClick={handleAssignToPit}
+              isLoading={isAssigning}
+              disabled={!selectedPitId || pitsForAssign.length === 0}
+            >
+              Assign to Pit
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => { setAssignDevice(null); setSelectedPitId('') }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Unassign Modal */}
       <Modal
