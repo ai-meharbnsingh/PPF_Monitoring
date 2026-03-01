@@ -18,6 +18,7 @@ from src.api.dependencies import get_super_admin
 from src.config.database import get_db
 from src.models.device import Device
 from src.models.pit import Pit
+from src.models.subscription import Subscription
 from src.models.user import User
 from src.models.workshop import Workshop
 from src.schemas.common import SuccessResponse, build_paginated
@@ -129,7 +130,32 @@ async def approve_device(
     
     await db.commit()
     await db.refresh(device)
-    
+
+    # Create a Subscription record so license validation passes.
+    # Without this the MQTT handler rejects the device's sensor messages
+    # and immediately sends a DISABLE command.
+    existing_sub = await db.execute(
+        select(Subscription).where(Subscription.device_id == device_id)
+    )
+    if not existing_sub.scalar_one_or_none():
+        from datetime import timedelta
+        from src.config.settings import get_settings
+        _settings = get_settings()
+        trial_days = _settings.TRIAL_DAYS
+        sub = Subscription(
+            workshop_id=workshop_id,
+            device_id=device_id,
+            license_key=license_key,
+            plan="basic",
+            status="active",
+            currency="INR",
+            trial_expires_at=utc_now() + timedelta(days=trial_days),
+            grace_period_days=_settings.GRACE_PERIOD_DAYS,
+        )
+        db.add(sub)
+        await db.commit()
+        logger.info(f"Created subscription for device {device_id}")
+
     # Send provisioning config to device via MQTT
     try:
         # Publish to provisioning topic - device is listening
@@ -139,14 +165,15 @@ async def approve_device(
         mqtt_client = get_mqtt_client()
         config_topic = f"provisioning/{device_id}/config"
         
+        # Keep payload compact — firmware buffer is 256 bytes (StaticJsonDocument<256>).
+        # Only the fields the device actually reads: command, license_key,
+        # workshop_id, pit_id.  Excess fields (mqtt_topic, approved_at, etc.)
+        # push the JSON over 256 bytes and cause silent truncation + parse failure.
         config_payload = {
+            "command": "PROVISION",
             "license_key": license_key,
             "workshop_id": workshop_id,
-            "pit_id": None,  # Owner will assign to pit later
-            "mqtt_topic": f"workshop/{workshop_id}/pit/+/sensors",
-            "command_topic": f"workshop/{workshop_id}/device/{device_id}/command",
-            "approved_at": utc_now().isoformat(),
-            "approved_by": current_user.username,
+            "pit_id": 0,  # Owner will assign to a pit later via ASSIGN command
         }
         
         mqtt_client.publish(
