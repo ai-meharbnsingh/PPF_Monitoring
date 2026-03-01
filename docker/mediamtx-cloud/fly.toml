@@ -1,0 +1,62 @@
+# fly.toml — MediaMTX on Fly.io (free tier)
+# Deploy with: fly deploy  (from the docker/mediamtx-cloud/ directory)
+
+app = "ppf-mediamtx"
+primary_region = "bom"          # Mumbai — closest to Delhi workshop
+
+[build]
+  image = "bluenviron/mediamtx:latest"
+
+[env]
+  MTX_LOGLEVEL = "info"
+
+# Mount our custom config into the container
+[[mounts]]
+  source = "mediamtx_config"
+  destination = "/config"
+
+[processes]
+  app = "/mediamtx /config/mediamtx.yml"
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+
+# HLS — HTTP — used by frontend VideoPlayer
+[[services]]
+  protocol = "tcp"
+  internal_port = 8888
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+# WebRTC — HTTP signalling
+[[services]]
+  protocol = "tcp"
+  internal_port = 8889
+
+  [[services.ports]]
+    port = 8889
+    handlers = ["tls", "http"]
+
+# RTSP — TCP — receives pushes from workshop machine
+[[services]]
+  protocol = "tcp"
+  internal_port = 8554
+
+  [[services.ports]]
+    port = 8554
+
+# ─── Resources (free tier) ────────────────────────────────────────────────────
+[vm]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

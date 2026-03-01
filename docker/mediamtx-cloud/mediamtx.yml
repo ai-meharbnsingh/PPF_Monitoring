@@ -1,0 +1,43 @@
+###############################################################################
+# mediamtx.yml — CLOUD config (Fly.io)
+#
+# This runs on Fly.io. It does NOT pull from cameras directly.
+# The workshop machine pushes RTSP streams TO this server using FFmpeg.
+#
+# Stream path: workshop_3_pit_1  (workshop ID 3, pit number 1)
+###############################################################################
+
+logLevel: info
+logDestinations: [stdout]
+
+# API (internal health check)
+api: yes
+apiAddress: :9997
+
+# ─── RTSP — receives pushed streams from the workshop machine ─────────────────
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp]
+
+# ─── HLS — what the frontend VideoPlayer consumes ────────────────────────────
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
+hlsSegmentDuration: 2s
+hlsPartDuration: 500ms
+hlsSegmentMaxSize: 50M
+
+# ─── WebRTC — low-latency option for supported browsers ──────────────────────
+webrtc: yes
+webrtcAddress: :8889
+
+# SRT / RTMP disabled
+srt: no
+rtmp: no
+
+# ─── Paths ────────────────────────────────────────────────────────────────────
+paths:
+  # Allow ANY path to be published — the workshop pusher creates paths dynamically
+  ~^.*$:
+    source: publisher
+    # Only accept pushes — no camera pulling from cloud
