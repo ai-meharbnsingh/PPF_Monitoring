@@ -39,13 +39,57 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
+async def _stale_device_sweeper() -> None:
+    """
+    Background task: marks devices offline when no sensor message has been
+    received within SENSOR_OFFLINE_THRESHOLD_SECONDS.
+
+    Runs every 30 seconds so the UI reflects disconnections quickly.
+    """
+    from datetime import timedelta
+    from sqlalchemy import select
+    from src.config.database import get_db_context
+    from src.models.device import Device
+    from src.utils.helpers import utc_now
+
+    threshold = settings.SENSOR_OFFLINE_THRESHOLD_SECONDS
+    logger.info(f"Stale-device sweeper started (threshold={threshold}s, interval=30s)")
+
+    while True:
+        try:
+            await asyncio.sleep(30)
+            cutoff = utc_now() - timedelta(seconds=threshold)
+            async with get_db_context() as db:
+                result = await db.execute(
+                    select(Device).where(
+                        Device.is_online == True,  # noqa: E712
+                        Device.last_seen < cutoff,
+                        Device.workshop_id.isnot(None),  # only assigned devices
+                    )
+                )
+                stale = result.scalars().all()
+                for dev in stale:
+                    dev.is_online = False
+                    logger.info(
+                        f"Stale sweeper: marked '{dev.device_id}' offline "
+                        f"(last_seen={dev.last_seen})"
+                    )
+                if stale:
+                    await db.commit()
+        except asyncio.CancelledError:
+            logger.info("Stale-device sweeper cancelled")
+            break
+        except Exception as exc:
+            logger.error(f"Stale-device sweeper error: {exc}", exc_info=True)
+
+
 # ─── Application Lifecycle ────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Startup and shutdown lifecycle manager.
-    - Startup:  Connect to MQTT broker
-    - Shutdown: Disconnect MQTT cleanly
+    - Startup:  Connect to MQTT broker, start background sweeper
+    - Shutdown: Cancel tasks, disconnect MQTT cleanly
     """
     # ── STARTUP ──────────────────────────────────────────────────────────────
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
@@ -61,12 +105,22 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to start MQTT subscriber: {e}", exc_info=True)
         # Non-fatal in development — allow app to start without MQTT
 
+    # Start background stale-device sweeper
+    sweeper_task = asyncio.create_task(_stale_device_sweeper())
+
     logger.info(f"API running at: {settings.SERVER_HOST}:{settings.SERVER_PORT}{settings.API_PREFIX}")
 
     yield  # Application runs here
 
     # ── SHUTDOWN ─────────────────────────────────────────────────────────────
     logger.info("Shutting down...")
+
+    sweeper_task.cancel()
+    try:
+        await sweeper_task
+    except asyncio.CancelledError:
+        pass
+
     try:
         from src.services.mqtt_service import teardown_mqtt
         teardown_mqtt()

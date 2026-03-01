@@ -284,12 +284,49 @@ async def _handle_sensor_message(topic: str, payload_str: str) -> None:
 
 
 async def _handle_device_status(topic: str, payload_str: str) -> None:
-    """Handle device status messages (online/offline confirmations)."""
+    """
+    Handle device status messages (online/offline).
+
+    Firmware publishes to workshop/{ws_id}/device/{device_id}/status:
+      • On connect:  {"device_id": "...", "status": "online",  "fw_version": "...", "ip": "..."}
+      • LWT (disconnect): {"device_id": "...", "status": "offline", "fw_version": "..."}
+    """
     try:
         data = json.loads(payload_str)
-        logger.debug(f"Device status on '{topic}': {data}")
     except json.JSONDecodeError as e:
         logger.warning(f"Invalid device status JSON on '{topic}': {e}")
+        return
+
+    device_id = data.get("device_id", "")
+    status = data.get("status", "")
+
+    if not device_id or status not in ("online", "offline"):
+        logger.debug(f"Device status ignored — missing/unknown fields: {data}")
+        return
+
+    is_online = status == "online"
+    logger.info(f"Device '{device_id}' → {status.upper()}")
+
+    try:
+        from sqlalchemy import select
+        from src.models.device import Device
+
+        async with get_db_context() as db:
+            result = await db.execute(select(Device).where(Device.device_id == device_id))
+            device = result.scalar_one_or_none()
+            if device:
+                device.is_online = is_online
+                if is_online:
+                    device.last_seen = utc_now()
+                    # Update IP if firmware sends a real address
+                    raw_ip = (data.get("ip") or "").replace("\x00", "").strip()
+                    if raw_ip and raw_ip != "connecting":
+                        device.ip_address = raw_ip
+                logger.debug(f"DB updated: device '{device_id}' is_online={is_online}")
+            else:
+                logger.debug(f"Status for unknown device_id='{device_id}' — ignoring")
+    except Exception as e:
+        logger.error(f"Error updating online status for '{device_id}': {e}", exc_info=True)
 
 
 async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
@@ -438,6 +475,9 @@ def setup_mqtt(loop: asyncio.AbstractEventLoop) -> None:
     client.on_connect = _on_connect
     client.on_disconnect = _on_disconnect
     client.on_message = _on_message
+
+    # Reconnect after 2 s, back-off up to 30 s — survives Render sleep/wake
+    client.reconnect_delay_set(min_delay=2, max_delay=30)
 
     try:
         client.connect(
