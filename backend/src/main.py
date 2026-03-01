@@ -39,6 +39,36 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
+async def _render_keep_alive() -> None:
+    """
+    Background task: pings this service's own /health endpoint every 10 minutes
+    to prevent Render free-tier from spinning the process down.
+
+    Only runs when BACKEND_BASE_URL is set (i.e., on Render, not in local dev).
+    """
+    base_url = getattr(settings, "BACKEND_BASE_URL", None)
+    if not base_url:
+        logger.debug("BACKEND_BASE_URL not set — Render keep-alive disabled")
+        return
+
+    ping_url = f"{base_url}/health"
+    logger.info(f"Render keep-alive started — pinging {ping_url} every 10 min")
+
+    import httpx
+
+    while True:
+        try:
+            await asyncio.sleep(10 * 60)  # 10 minutes
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(ping_url)
+                logger.info(f"Keep-alive ping → {resp.status_code}")
+        except asyncio.CancelledError:
+            logger.info("Render keep-alive cancelled")
+            break
+        except Exception as exc:
+            logger.warning(f"Keep-alive ping failed: {exc}")
+
+
 async def _stale_device_sweeper() -> None:
     """
     Background task: marks devices offline when no sensor message has been
@@ -108,6 +138,9 @@ async def lifespan(app: FastAPI):
     # Start background stale-device sweeper
     sweeper_task = asyncio.create_task(_stale_device_sweeper())
 
+    # Keep Render free-tier awake (no-op if BACKEND_BASE_URL is not set)
+    keepalive_task = asyncio.create_task(_render_keep_alive())
+
     logger.info(f"API running at: {settings.SERVER_HOST}:{settings.SERVER_PORT}{settings.API_PREFIX}")
 
     yield  # Application runs here
@@ -116,10 +149,12 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
     sweeper_task.cancel()
-    try:
-        await sweeper_task
-    except asyncio.CancelledError:
-        pass
+    keepalive_task.cancel()
+    for task in (sweeper_task, keepalive_task):
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     try:
         from src.services.mqtt_service import teardown_mqtt
