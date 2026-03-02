@@ -78,16 +78,6 @@ export default function JobDetailPage() {
     }
   }
 
-  const handleCopyTrackingLink = () => {
-    if (!job?.customer_view_token) return
-    const url = `${window.location.origin}/track/${job.customer_view_token}`
-    void navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      toast.success('Tracking link copied!')
-    })
-  }
-
   if (loading) return <PageSpinner />
   if (!job) return null
 
@@ -259,13 +249,29 @@ export default function JobDetailPage() {
             </div>
           )}
 
-          {/* Tracking link */}
-          {job.customer_view_token && (
+          {/* Tracking code + link */}
+          {job.tracking_code && (
             <div className="card p-4">
-              <h2 className="font-semibold text-gray-800 mb-3">Customer Tracking</h2>
-              <p className="text-xs text-gray-500 mb-3">
-                Share this link with the customer to let them track progress.
+              <h2 className="font-semibold text-gray-800 mb-3">Customer View Code</h2>
+              <p className="text-xs text-gray-500 mb-2">
+                Share this code so the customer can watch the live bay camera — no login needed.
               </p>
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3">
+                <span className="text-2xl font-mono font-bold tracking-widest text-gray-900">
+                  {job.tracking_code}
+                </span>
+                <button
+                  onClick={() => {
+                    void navigator.clipboard.writeText(job.tracking_code!).then(() =>
+                      toast.success('Code copied!')
+                    )
+                  }}
+                  className="text-gray-400 hover:text-gray-700 transition-colors"
+                  title="Copy code"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -277,9 +283,16 @@ export default function JobDetailPage() {
                     <Copy className="h-3.5 w-3.5" />
                   )
                 }
-                onClick={handleCopyTrackingLink}
+                onClick={() => {
+                  const url = `${window.location.origin}/track?code=${job.tracking_code}`
+                  void navigator.clipboard.writeText(url).then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                    toast.success('Link copied!')
+                  })
+                }}
               >
-                {copied ? 'Copied!' : 'Copy Tracking Link'}
+                {copied ? 'Copied!' : 'Copy Customer Link'}
               </Button>
             </div>
           )}

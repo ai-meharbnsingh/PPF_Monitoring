@@ -379,4 +379,70 @@ async def customer_track_job_by_code(
         "pit_display_name": job.pit.display_name if job.pit else "Bay",
         "workshop_name": job.workshop.name if job.workshop else "",
         "pit_id": job.pit_id,
+        "camera_is_online": job.pit.camera_is_online if job.pit else False,
+    }
+
+
+# ─── Public sensor data via 6-digit tracking code (no auth) ──────────────────
+@router.get("/track/code/{tracking_code}/sensors")
+async def public_sensors_by_code(
+    tracking_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public endpoint — no auth required.
+    Returns latest sensor readings for the bay associated with a tracking code.
+    """
+    from sqlalchemy import desc, select
+    from sqlalchemy.orm import selectinload
+
+    from src.models.sensor_data import SensorData
+
+    if not tracking_code.isdigit() or len(tracking_code) != 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tracking code format. Must be 6 digits.",
+        )
+
+    result = await db.execute(
+        select(Job)
+        .where(Job.tracking_code == tracking_code)
+        .options(selectinload(Job.pit))
+    )
+    job = result.scalar_one_or_none()
+
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tracking code not found",
+        )
+
+    pit = job.pit
+    if pit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No bay found for this job",
+        )
+
+    # Get device online status (device relationship uses lazy="selectin", auto-loaded with pit)
+    is_device_online = bool(pit.device and pit.device.is_online)
+
+    # Get latest sensor reading for this pit
+    sensor_result = await db.execute(
+        select(SensorData)
+        .where(SensorData.pit_id == pit.id)
+        .order_by(desc(SensorData.created_at))
+        .limit(1)
+    )
+    latest = sensor_result.scalar_one_or_none()
+
+    return {
+        "temperature": latest.temperature if latest else None,
+        "humidity": latest.humidity if latest else None,
+        "pm25": latest.pm25 if latest else None,
+        "pm10": latest.pm10 if latest else None,
+        "iaq": latest.iaq if latest else None,
+        "pressure": latest.pressure if latest else None,
+        "is_device_online": is_device_online,
+        "last_reading_at": latest.created_at.isoformat() if latest else None,
     }

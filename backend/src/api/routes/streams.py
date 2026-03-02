@@ -11,11 +11,14 @@ Created: 2026-02-21
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.api.dependencies import get_current_user, get_staff_or_above, require_workshop_access
 from src.config.database import get_db
 from src.config.settings import get_settings
+from src.models.job import Job
 from src.models.pit import Pit
 from src.models.user import User
 from src.schemas.stream import PitStreamStatus, StreamTokenResponse
@@ -108,4 +111,70 @@ async def stream_status(
         camera_model=pit.camera_model,
         camera_last_seen=pit.camera_last_seen,
         rtsp_path=rtsp_path,
+    )
+
+
+# ─── Public stream token via 6-digit tracking code (no auth) ─────────────────
+@router.get("/track/code/{tracking_code}/stream-token", response_model=StreamTokenResponse)
+async def public_stream_token_by_code(
+    tracking_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public endpoint — no auth required.
+    Customer provides their 6-digit tracking code to get a stream token
+    for watching the live camera feed of their car's bay.
+    """
+    if not tracking_code.isdigit() or len(tracking_code) != 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tracking code. Must be 6 digits.",
+        )
+
+    result = await db.execute(
+        select(Job)
+        .where(Job.tracking_code == tracking_code)
+        .options(selectinload(Job.pit))
+    )
+    job = result.scalar_one_or_none()
+
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tracking code not found",
+        )
+
+    if job.status == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This job has been cancelled",
+        )
+
+    pit = job.pit
+    if pit is None or not pit.camera_rtsp_url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No camera configured for this bay",
+        )
+
+    settings = get_settings()
+    token = generate_stream_token()
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(
+        hours=settings.STREAM_TOKEN_EXPIRE_HOURS
+    )
+
+    stream_path = f"workshop_{pit.workshop_id}_pit_{pit.pit_number}"
+    host = settings.MEDIAMTX_HOST
+
+    logger.info(
+        f"Public stream token issued: tracking_code={tracking_code} pit_id={pit.id}"
+    )
+
+    return StreamTokenResponse(
+        pit_id=pit.id,
+        stream_token=token,
+        expires_at=expires_at,
+        rtsp_url=f"rtsp://{host}:{settings.MEDIAMTX_RTSP_PORT}/{stream_path}?token={token}",
+        webrtc_url=f"http://{host}:{settings.MEDIAMTX_WEBRTC_PORT}/{stream_path}?token={token}",
+        hls_url=f"http://{host}:8888/{stream_path}/index.m3u8?token={token}",
     )

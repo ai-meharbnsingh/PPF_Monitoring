@@ -294,116 +294,9 @@ export default function PitDetailPage() {
           canViewVideo && 'lg:grid-cols-3',
         )}
       >
-        {/* LEFT: Live readings + History chart ─────────────────────── */}
-        <div className="space-y-5">
-          {/* Live readings card */}
-          <div className={clsx('card border transition-colors duration-300', isOnline ? colors.border : 'border-gray-700/50')}>
-            <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
-              <p className="text-sm font-semibold text-white">Live Readings</p>
-              {sensors?.last_reading_at && (
-                <span className="text-[10px] text-gray-600">
-                  {isOnline 
-                    ? `Updated ${formatRelative(sensors.last_reading_at)}`
-                    : `Offline since ${formatRelative(sensors.last_reading_at)}`}
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2 p-4 relative">
-              {/* Offline overlay */}
-              {!isOnline && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-lg">
-                  <div className="text-center">
-                    <WifiOff className="h-10 w-10 text-gray-500 mx-auto mb-3" />
-                    <p className="text-base text-gray-300 font-semibold">Device Offline</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {sensors?.last_reading_at
-                        ? `Last seen ${formatRelative(sensors.last_reading_at)}`
-                        : 'Waiting for data...'}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <SensorTile
-                metric="temperature"
-                value={sensors?.temperature ?? null}
-                status={isOnline ? (sensors?.temp_status ?? 'unknown') : 'unknown'}
-              />
-              <SensorTile
-                metric="humidity"
-                value={sensors?.humidity ?? null}
-                status={isOnline ? (sensors?.humidity_status ?? 'unknown') : 'unknown'}
-              />
-              <SensorTile
-                metric="pm25"
-                value={sensors?.pm25 ?? null}
-                status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
-              />
-              <SensorTile
-                metric="pm10"
-                value={sensors?.pm10 ?? null}
-                status={isOnline ? (sensors?.pm10_status ?? 'unknown') : 'unknown'}
-              />
-              {sensors?.pm1 != null && (
-                <SensorTile
-                  metric="pm1"
-                  value={sensors.pm1}
-                  status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
-                />
-              )}
-              {sensors?.pressure != null && (
-                <SensorTile
-                  metric="pressure"
-                  value={sensors.pressure}
-                  status={isOnline ? 'good' : 'unknown'}
-                />
-              )}
-              {sensors?.gas_resistance != null && (
-                <SensorTile
-                  metric="gas_resistance"
-                  value={Math.round(sensors.gas_resistance / 1000)}
-                  status={isOnline ? 'good' : 'unknown'}
-                />
-              )}
-              {sensors?.iaq != null && (
-                <SensorTile
-                  metric="iaq"
-                  value={sensors.iaq}
-                  status={isOnline ? (sensors.iaq_status ?? 'unknown') : 'unknown'}
-                  className="col-span-2"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Sensor history chart */}
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-4 w-4 text-electric-blue/70" />
-              <h2 className="text-sm font-semibold text-white">Sensor History</h2>
-            </div>
-            <SensorHistoryChart pitId={pit.id} />
-          </div>
-
-          {/* Per-pit alert thresholds — owner/admin only */}
-          {isOwnerOrAdmin && (
-            <PitAlertConfigPanel
-              pitId={pit.id}
-              alertCfg={alertCfg}
-              alertOpen={alertOpen}
-              onToggle={() => {
-                if (!alertOpen && !alertCfg) {
-                  pitsApi.getAlertConfig(pit.id).then(setAlertCfg).catch(() => { })
-                }
-                setAlertOpen(!alertOpen)
-              }}
-              onSaved={(cfg) => setAlertCfg(cfg)}
-            />
-          )}
-        </div>
-
-        {/* RIGHT: Video feed + sensor data overlaid ────────────────── */}
+        {/* Video feed — first on mobile, right column on desktop ────────────── */}
         {canViewVideo && (
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-3 order-first lg:order-last">
             {/* ── Video container ── */}
             <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/60 bg-black">
               {/* Stream fills the container */}
@@ -601,6 +494,114 @@ export default function PitDetailPage() {
             </div>
           </div>
         )}
+
+        {/* LEFT: Live readings + History chart ─────────────────────── */}
+        <div className="space-y-5">
+          {/* Live readings card */}
+          <div className={clsx('card border transition-colors duration-300', isOnline ? colors.border : 'border-gray-700/50')}>
+            <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
+              <p className="text-sm font-semibold text-white">Live Readings</p>
+              {sensors?.last_reading_at && (
+                <span className="text-[10px] text-gray-600">
+                  {isOnline 
+                    ? `Updated ${formatRelative(sensors.last_reading_at)}`
+                    : `Offline since ${formatRelative(sensors.last_reading_at)}`}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-4 relative">
+              {/* Offline overlay */}
+              {!isOnline && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-lg">
+                  <div className="text-center">
+                    <WifiOff className="h-10 w-10 text-gray-500 mx-auto mb-3" />
+                    <p className="text-base text-gray-300 font-semibold">Device Offline</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {sensors?.last_reading_at
+                        ? `Last seen ${formatRelative(sensors.last_reading_at)}`
+                        : 'Waiting for data...'}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <SensorTile
+                metric="temperature"
+                value={sensors?.temperature ?? null}
+                status={isOnline ? (sensors?.temp_status ?? 'unknown') : 'unknown'}
+              />
+              <SensorTile
+                metric="humidity"
+                value={sensors?.humidity ?? null}
+                status={isOnline ? (sensors?.humidity_status ?? 'unknown') : 'unknown'}
+              />
+              <SensorTile
+                metric="pm25"
+                value={sensors?.pm25 ?? null}
+                status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
+              />
+              <SensorTile
+                metric="pm10"
+                value={sensors?.pm10 ?? null}
+                status={isOnline ? (sensors?.pm10_status ?? 'unknown') : 'unknown'}
+              />
+              {sensors?.pm1 != null && (
+                <SensorTile
+                  metric="pm1"
+                  value={sensors.pm1}
+                  status={isOnline ? (sensors?.pm25_status ?? 'unknown') : 'unknown'}
+                />
+              )}
+              {sensors?.pressure != null && (
+                <SensorTile
+                  metric="pressure"
+                  value={sensors.pressure}
+                  status={isOnline ? 'good' : 'unknown'}
+                />
+              )}
+              {sensors?.gas_resistance != null && (
+                <SensorTile
+                  metric="gas_resistance"
+                  value={Math.round(sensors.gas_resistance / 1000)}
+                  status={isOnline ? 'good' : 'unknown'}
+                />
+              )}
+              {sensors?.iaq != null && (
+                <SensorTile
+                  metric="iaq"
+                  value={sensors.iaq}
+                  status={isOnline ? (sensors.iaq_status ?? 'unknown') : 'unknown'}
+                  className="col-span-2"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Sensor history chart */}
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-4 w-4 text-electric-blue/70" />
+              <h2 className="text-sm font-semibold text-white">Sensor History</h2>
+            </div>
+            <SensorHistoryChart pitId={pit.id} />
+          </div>
+
+          {/* Per-pit alert thresholds — owner/admin only */}
+          {isOwnerOrAdmin && (
+            <PitAlertConfigPanel
+              pitId={pit.id}
+              alertCfg={alertCfg}
+              alertOpen={alertOpen}
+              onToggle={() => {
+                if (!alertOpen && !alertCfg) {
+                  pitsApi.getAlertConfig(pit.id).then(setAlertCfg).catch(() => { })
+                }
+                setAlertOpen(!alertOpen)
+              }}
+              onSaved={(cfg) => setAlertCfg(cfg)}
+            />
+          )}
+        </div>
+
       </div>
     </div>
   )

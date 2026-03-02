@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
-import { VideoOff, Wifi, Loader2 } from 'lucide-react'
+import { VideoOff, Wifi, Loader2, Maximize2, Minimize2 } from 'lucide-react'
 import Hls from 'hls.js'
 import { formatRelative } from '@/utils/formatters'
 
@@ -24,10 +24,38 @@ export function VideoPlayer({
   className,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const [protocol, setProtocol] = useState<StreamProtocol>('loading')
   const [error, setError] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Handle fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return
+    
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen()
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err)
+    }
+  }
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   useEffect(() => {
     if (!isOnline) {
@@ -150,7 +178,11 @@ export function VideoPlayer({
   }
 
   return (
-    <div className={clsx('relative bg-black rounded-xl overflow-hidden', className)}>
+    <div 
+      ref={containerRef}
+      className={clsx('relative bg-black rounded-xl overflow-hidden cursor-pointer group', className)}
+      onClick={toggleFullscreen}
+    >
       {/* Loading overlay */}
       {protocol === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
@@ -171,6 +203,31 @@ export function VideoPlayer({
           {pitName}
         </div>
       )}
+
+      {/* Fullscreen button - shows on hover/tap */}
+      <div className="absolute bottom-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            void toggleFullscreen()
+          }}
+          className="flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        >
+          {isFullscreen ? (
+            <Minimize2 className="h-5 w-5" />
+          ) : (
+            <Maximize2 className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Click hint for mobile */}
+      <div className="absolute inset-0 flex items-center justify-center z-10 opacity-0 group-active:opacity-100 transition-opacity duration-200 pointer-events-none">
+        <div className="bg-black/50 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+          Tap for fullscreen
+        </div>
+      </div>
 
       <video
         ref={videoRef}

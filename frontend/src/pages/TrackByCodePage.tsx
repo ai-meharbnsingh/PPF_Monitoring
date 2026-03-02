@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { VideoPlayer } from '@/components/video/VideoPlayer'
 import { Car, Search, Video, Thermometer, Droplets, Wind } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -19,6 +20,7 @@ interface TrackingData {
   pit_display_name: string
   workshop_name: string
   pit_id: number
+  camera_is_online: boolean
 }
 
 interface SensorData {
@@ -37,6 +39,8 @@ export default function TrackByCodePage() {
   const [loading, setLoading] = useState(false)
   const [jobData, setJobData] = useState<TrackingData | null>(null)
   const [sensorData, setSensorData] = useState<SensorData | null>(null)
+  const [streamUrls, setStreamUrls] = useState<{ webrtcUrl: string; hlsUrl: string } | null>(null)
+  const [activeCode, setActiveCode] = useState('')
 
   // Auto-submit if code is provided in URL
   useEffect(() => {
@@ -64,20 +68,33 @@ export default function TrackByCodePage() {
         setLoading(false)
         return
       }
-      
-      const job = await jobRes.json()
-      setJobData(job)
 
-      // Fetch sensor data for the pit
+      const job: TrackingData = await jobRes.json()
+      setJobData(job)
+      setActiveCode(lookupCode)
+
+      // Fetch sensor data (public endpoint, no auth required)
       try {
-        const sensorRes = await fetch(`/api/v1/pits/${job.pit_id}/sensors/latest`)
+        const sensorRes = await fetch(`/api/v1/track/code/${lookupCode}/sensors`)
         if (sensorRes.ok) {
           const sensor = await sensorRes.json()
           setSensorData(sensor)
         }
-      } catch (e) {
+      } catch {
         // Sensor data is optional
-        console.log('No sensor data available')
+      }
+
+      // Fetch stream token if camera is online (public endpoint, no auth required)
+      if (job.camera_is_online) {
+        try {
+          const streamRes = await fetch(`/api/v1/track/code/${lookupCode}/stream-token`)
+          if (streamRes.ok) {
+            const stream = await streamRes.json()
+            setStreamUrls({ webrtcUrl: stream.webrtc_url ?? '', hlsUrl: stream.hls_url ?? '' })
+          }
+        } catch {
+          // Stream token is optional — video section will show offline state
+        }
       }
 
     } catch (error) {
@@ -175,11 +192,36 @@ export default function TrackByCodePage() {
               onClick={() => {
                 setJobData(null)
                 setSensorData(null)
+                setStreamUrls(null)
+                setActiveCode('')
                 setCode('')
               }}
             >
               ← Track Another Car
             </Button>
+
+            {/* Live Video — top on mobile */}
+            <div className="card p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Video className="h-5 w-5 text-red-500" />
+                <h3 className="text-lg font-semibold text-white">Live Camera</h3>
+                {jobData.camera_is_online && (
+                  <span className="flex items-center gap-1 text-xs text-red-400">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
+              </div>
+              <div className="aspect-video rounded-lg overflow-hidden border border-white/10">
+                <VideoPlayer
+                  webrtcUrl={streamUrls?.webrtcUrl ?? ''}
+                  hlsUrl={streamUrls?.hlsUrl ?? ''}
+                  pitName={jobData.pit_display_name}
+                  isOnline={jobData.camera_is_online}
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
 
             {/* Car Info Card */}
             <div className="card p-6">
@@ -252,21 +294,6 @@ export default function TrackByCodePage() {
                     className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-electric-blue"
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Live Video */}
-            <div className="card p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Video className="h-5 w-5 text-red-500" />
-                <h3 className="text-lg font-semibold text-white">Live Camera</h3>
-                <span className="flex items-center gap-1 text-xs text-red-400">
-                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                  LIVE
-                </span>
-              </div>
-              <div className="aspect-video bg-black rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
-                <p className="text-gray-500">Video stream will appear here</p>
               </div>
             </div>
 
