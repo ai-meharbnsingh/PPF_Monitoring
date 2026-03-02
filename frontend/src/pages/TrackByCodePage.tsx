@@ -40,7 +40,6 @@ export default function TrackByCodePage() {
   const [jobData, setJobData] = useState<TrackingData | null>(null)
   const [sensorData, setSensorData] = useState<SensorData | null>(null)
   const [streamUrls, setStreamUrls] = useState<{ webrtcUrl: string; hlsUrl: string } | null>(null)
-  const [activeCode, setActiveCode] = useState('')
 
   // Auto-submit if code is provided in URL
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function TrackByCodePage() {
 
       const job: TrackingData = await jobRes.json()
       setJobData(job)
-      setActiveCode(lookupCode)
+
 
       // Fetch sensor data (public endpoint, no auth required)
       try {
@@ -193,7 +192,6 @@ export default function TrackByCodePage() {
                 setJobData(null)
                 setSensorData(null)
                 setStreamUrls(null)
-                setActiveCode('')
                 setCode('')
               }}
             >
