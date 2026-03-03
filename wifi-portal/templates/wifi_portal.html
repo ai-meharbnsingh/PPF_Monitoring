@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Configuration - Raspberry Pi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .status-section {
+            text-align: center;
+        }
+        
+        .status-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .status-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .status-detail {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .connected { color: #00c851; }
+        .disconnected { color: #ff4444; }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-danger {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #cc0000;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .network-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .network-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .network-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .network-item.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+        
+        .network-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+        
+        .network-info {
+            flex: 1;
+        }
+        
+        .network-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .network-meta {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .signal-bars {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+        }
+        
+        .signal-bar {
+            width: 4px;
+            background: #ddd;
+            border-radius: 2px;
+        }
+        
+        .signal-bar:nth-child(1) { height: 4px; }
+        .signal-bar:nth-child(2) { height: 8px; }
+        .signal-bar:nth-child(3) { height: 12px; }
+        .signal-bar:nth-child(4) { height: 16px; }
+        
+        .signal-bar.active {
+            background: #00c851;
+        }
+        
+        .signal-bar.medium {
+            background: #ffbb33;
+        }
+        
+        .signal-bar.weak {
+            background: #ff4444;
+        }
+        
+        .lock-icon {
+            margin-left: 8px;
+            color: #888;
+        }
+        
+        .password-form {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .actions .btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        @media (max-width: 400px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📡 WiFi Configuration</h1>
+            <p>Connect your Raspberry Pi to a wireless network</p>
+        </div>
+
+        <!-- Status Card -->
+        <div class="card">
+            <div class="status-section" id="statusSection">
+                <div class="status-icon">⏳</div>
+                <div class="status-text">Loading...</div>
+                <div class="status-detail">Please wait</div>
+            </div>
+        </div>
+
+        <!-- Message Area -->
+        <div id="messageArea"></div>
+
+        <!-- Available Networks -->
+        <div class="card">
+            <div class="section-title">
+                📶 Available Networks
+                <span id="scanStatus"></span>
+            </div>
+            
+            <button class="btn btn-primary" id="scanBtn" onclick="scanNetworks()">
+                🔍 Scan for Networks
+            </button>
+            
+            <div class="network-list" id="networkList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📡</div>
+                    <p>Click "Scan for Networks" to find available WiFi networks</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Form (Hidden by default) -->
+        <div class="card hidden" id="passwordCard">
+            <div class="section-title">
+                🔐 Enter Password
+            </div>
+            <div id="selectedNetworkName" style="margin-bottom: 16px; font-weight: 600; color: #667eea;"></div>
+            
+            <div class="password-form">
+                <div class="form-group">
+                    <label class="form-label">WiFi Password</label>
+                    <input type="password" class="form-input" id="passwordInput" 
+                           placeholder="Enter network password" onkeypress="handleKeyPress(event)">
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="cancelConnect()">Cancel</button>
+                    <button class="btn btn-primary" id="connectBtn" onclick="connectToNetwork()">
+                        Connect
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="section-title">⚙️ System Actions</div>
+            
+            <button class="btn btn-secondary" onclick="disconnectWifi()">
+                🔌 Disconnect WiFi
+            </button>
+            
+            <button class="btn btn-danger" onclick="rebootPi()">
+                🔄 Reboot Raspberry Pi
+            </button>
+        </div>
+
+        <!-- Info -->
+        <div style="text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 20px;">
+            <p>Raspberry Pi WiFi Configuration Portal</p>
+            <p id="piIp">IP: Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedNetwork = null;
+        let isScanning = false;
+        let currentStatus = null;
+
+        // Load status on page load
+        window.addEventListener('load', () => {
+            loadStatus();
+            // Auto-scan on load
+            setTimeout(scanNetworks, 500);
+        });
+
+        function showMessage(text, type) {
+            const area = document.getElementById('messageArea');
+            area.innerHTML = `<div class="message ${type}">${text}</div>`;
+            setTimeout(() => {
+                area.innerHTML = '';
+            }, 5000);
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                currentStatus = data;
+                
+                const section = document.getElementById('statusSection');
+                const ipEl = document.getElementById('piIp');
+                
+                ipEl.textContent = `IP: ${data.ip || 'Not connected'}`;
+                
+                if (data.connected) {
+                    section.innerHTML = `
+                        <div class="status-icon connected">✅</div>
+                        <div class="status-text connected">Connected</div>
+                        <div class="status-detail">
+                            Network: <strong>${escapeHtml(data.ssid || 'Unknown')}</strong><br>
+                            IP: ${data.ip || 'Unknown'}
+                        </div>
+                    `;
+                } else {
+                    section.innerHTML = `
+                        <div class="status-icon disconnected">⚠️</div>
+                        <div class="status-text disconnected">Not Connected</div>
+                        <div class="status-detail">Please connect to a WiFi network</div>
+                    `;
+                }
+            } catch (err) {
+                document.getElementById('statusSection').innerHTML = `
+                    <div class="status-icon">❌</div>
+                    <div class="status-text">Error</div>
+                    <div class="status-detail">Failed to load status</div>
+                `;
+            }
+        }
+
+        function getSignalBars(signal) {
+            // signal is usually in dBm (negative number, closer to 0 is better)
+            // or percentage (0-100)
+            let bars = 0;
+            if (signal >= 0) {
+                // Percentage
+                if (signal > 75) bars = 4;
+                else if (signal > 50) bars = 3;
+                else if (signal > 25) bars = 2;
+                else bars = 1;
+            } else {
+                // dBm
+                if (signal > -50) bars = 4;
+                else if (signal > -60) bars = 3;
+                else if (signal > -70) bars = 2;
+                else bars = 1;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= 4; i++) {
+                let cls = 'signal-bar';
+                if (i <= bars) {
+                    if (bars >= 3) cls += ' active';
+                    else if (bars === 2) cls += ' medium';
+                    else cls += ' weak';
+                }
+                html += `<div class="${cls}"></div>`;
+            }
+            return html;
+        }
+
+        async function scanNetworks() {
+            if (isScanning) return;
+            
+            isScanning = true;
+            const btn = document.getElementById('scanBtn');
+            const list = document.getElementById('networkList');
+            const status = document.getElementById('scanStatus');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Scanning...';
+            status.textContent = '(scanning...)';
+            
+            list.innerHTML = '<div style="text-align: center; padding: 40px;"><span class="spinner"></span><p>Scanning for networks...</p></div>';
+            
+            try {
+                const response = await fetch('/api/scan');
+                const data = await response.json();
+                
+                if (data.error) {
+                    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><p>${escapeHtml(data.error)}</p></div>`;
+                    return;
+                }
+                
+                if (!data.networks || data.networks.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📡</div>
+                            <p>No networks found</p>
+                            <p style="font-size: 0.85rem; margin-top: 10px;">Make sure WiFi is enabled and try again</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Render networks
+                let html = '';
+                data.networks.forEach((network, index) => {
+                    const isSecure = network.security && network.security !== 'Open';
+                    const lockIcon = isSecure ? '🔒' : '🔓';
+                    
+                    html += `
+                        <div class="network-item" onclick="selectNetwork('${escapeHtml(network.ssid)}', ${isSecure}, this)">
+                            <div class="network-icon">📶</div>
+                            <div class="network-info">
+                                <div class="network-name">${escapeHtml(network.ssid)}</div>
+                                <div class="network-meta">
+                                    ${isSecure ? 'Secured' : 'Open'} Network
+                                </div>
+                            </div>
+                            <div class="signal-bars">${getSignalBars(network.signal)}</div>
+                            <span class="lock-icon" title="${isSecure ? 'Secured' : 'Open'}">${lockIcon}</span>
+                        </div>
+                    `;
+                });
+                
+                list.innerHTML = html;
+                
+            } catch (err) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p>Failed to scan networks</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px;">${escapeHtml(err.message)}</p>
+                    </div>
+                `;
+            } finally {
+                isScanning = false;
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Scan for Networks';
+                status.textContent = '';
+            }
+        }
+
+        function selectNetwork(ssid, isSecure, element) {
+            // Remove previous selection
+            document.querySelectorAll('.network-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            selectedNetwork = { ssid, isSecure };
+            
+            const card = document.getElementById('passwordCard');
+            const nameEl = document.getElementById('selectedNetworkName');
+            
+            nameEl.textContent = `Network: ${ssid}`;
+            card.classList.remove('hidden');
+            
+            if (!isSecure) {
+                document.getElementById('passwordInput').placeholder = 'No password required (Open Network)';
+                document.getElementById('passwordInput').value = '';
+            } else {
+                document.getElementById('passwordInput').placeholder = 'Enter network password';
+                document.getElementById('passwordInput').focus();
+            }
+            
+            // Scroll to password form
+            card.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelConnect() {
+            document.getElementById('passwordCard').classList.add('hidden');
+            document.querySelectorAll('.network-item').forEach(el => el.classList.remove('selected'));
+            selectedNetwork = null;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                connectToNetwork();
+            }
+        }
+
+        async function connectToNetwork() {
+            if (!selectedNetwork) return;
+            
+            const password = document.getElementById('passwordInput').value;
+            const btn = document.getElementById('connectBtn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Connecting...';
+            
+            try {
+                const response = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ssid: selectedNetwork.ssid,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`✅ Connected to "${escapeHtml(selectedNetwork.ssid)}" successfully!`, 'success');
+                    cancelConnect();
+                    // Reload status after a delay
+                    setTimeout(loadStatus, 2000);
+                } else {
+                    showMessage(`❌ Failed to connect: ${escapeHtml(data.error || 'Unknown error')}`, 'error');
+                }
+            } catch (err) {
+                showMessage(`❌ Error: ${escapeHtml(err.message)}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Connect';
+            }
+        }
+
+        async function disconnectWifi() {
+            if (!confirm('Are you sure you want to disconnect from WiFi?')) return;
+            
+            try {
+                const response = await fetch('/api/disconnect', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('🔌 Disconnected from WiFi', 'success');
+                    loadStatus();
+                } else {
+                    showMessage('❌ Failed to disconnect', 'error');
+                }
+            } catch (err) {
+                showMessage(`❌ Error: ${escapeHtml(err.message)}`, 'error');
+            }
+        }
+
+        async function rebootPi() {
+            if (!confirm('Are you sure you want to reboot the Raspberry Pi?\n\nYou will lose connection for a few minutes.')) return;
+            
+            try {
+                await fetch('/api/reboot', { method: 'POST' });
+                showMessage('🔄 Rebooting... Please wait 1-2 minutes before reconnecting.', 'success');
+            } catch (err) {
+                // Expected - connection will be lost
+                showMessage('🔄 Reboot command sent. Please wait 1-2 minutes.', 'success');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

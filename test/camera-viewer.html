@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Camera Feed - Workshop Pit Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4aa, #00a8e8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 0.95rem;
+        }
+        
+        .stream-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .stream-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stream-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stream-header {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stream-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.live {
+            background: #00d4aa;
+            color: #000;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-badge.offline {
+            background: #ff4757;
+            color: #fff;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+        }
+        
+        video, iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .stream-info {
+            padding: 15px 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-item strong {
+            color: #00d4aa;
+        }
+        
+        .controls {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00d4aa 0%, #00a8e8 100%);
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 212, 170, 0.3);
+        }
+        
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .connection-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        
+        .connection-info h3 {
+            margin-bottom: 10px;
+            color: #00d4aa;
+        }
+        
+        .connection-info code {
+            display: block;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin: 5px 0;
+            color: #00a8e8;
+            word-break: break-all;
+        }
+        
+        .error-message {
+            padding: 40px;
+            text-align: center;
+            color: #ff4757;
+        }
+        
+        @media (min-width: 768px) {
+            .stream-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📹 Live Camera Feed</h1>
+            <p class="subtitle">PPF Workshop Pit Monitoring - Streaming from Raspberry Pi</p>
+        </header>
+        
+        <div class="stream-container">
+            <!-- Main Camera Stream -->
+            <div class="stream-card">
+                <div class="stream-header">
+                    <span class="stream-title">🎥 Pit Camera 1 (Main)</span>
+                    <span class="status-badge live" id="status1">LIVE</span>
+                </div>
+                <div class="video-wrapper">
+                    <!-- WebRTC is the primary method -->
+                    <video id="video1" autoplay muted playsinline controls>
+                        Your browser does not support video.
+                    </video>
+                </div>
+                <div class="stream-info">
+                    <div class="info-item">
+                        <span>📡 Protocol:</span>
+                        <strong id="protocol1">WebRTC</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>🎯 Resolution:</span>
+                        <strong>1920x1080</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>⏱️ Latency:</span>
+                        <strong>~500ms</strong>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button onclick="startWebRTC()">▶️ Start WebRTC</button>
+                    <button onclick="switchToHLS()" class="secondary">📺 Switch to HLS</button>
+                    <button onclick="refreshStream()" class="secondary">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <!-- Sub Stream (Lower Resolution) -->
+            <div class="stream-card">
+                <div class="stream-header">
+                    <span class="stream-title">🎥 Pit Camera 1 (Sub)</span>
+                    <span class="status-badge live" id="status2">LIVE</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video2" autoplay muted playsinline controls>
+                        Your browser does not support video.
+                    </video>
+                </div>
+                <div class="stream-info">
+                    <div class="info-item">
+                        <span>📡 Protocol:</span>
+                        <strong>WebRTC</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>🎯 Resolution:</span>
+                        <strong>640x360</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>💾 Bandwidth:</span>
+                        <strong>Lower</strong>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button onclick="startWebRTC2()">▶️ Start WebRTC</button>
+                    <button onclick="refreshStream2()" class="secondary">🔄 Refresh</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="connection-info">
+            <h3>🔗 Connection Details</h3>
+            <p><strong>MediaMTX Server:</strong> <code id="server-url">ws://192.168.29.115:8889</code></p>
+            <p><strong>WebRTC Endpoint:</strong> <code>http://192.168.29.115:8889/cam1/whep</code></p>
+            <p><strong>HLS Fallback:</strong> <code>http://192.168.29.115:8888/cam1/index.m3u8</code></p>
+            <p><strong>RTSP Source:</strong> <code>rtsp://192.168.29.115:8554/cam1</code></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const SERVER_IP = '192.168.29.115';
+        const WEBRTC_PORT = '8889';
+        const HLS_PORT = '8888';
+        
+        let pc1 = null;
+        let pc2 = null;
+        
+        // WebRTC Helper Functions
+        async function startWebRTC() {
+            const video = document.getElementById('video1');
+            const status = document.getElementById('status1');
+            
+            try {
+                status.textContent = 'CONNECTING...';
+                status.className = 'status-badge';
+                
+                // Create peer connection
+                pc1 = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                // Add transceiver for receiving video
+                pc1.addTransceiver('video', { direction: 'recvonly' });
+                
+                // Handle incoming stream
+                pc1.ontrack = (event) => {
+                    video.srcObject = event.streams[0];
+                    status.textContent = 'LIVE';
+                    status.className = 'status-badge live';
+                };
+                
+                // Create offer
+                const offer = await pc1.createOffer();
+                await pc1.setLocalDescription(offer);
+                
+                // Wait for ICE gathering to complete
+                await new Promise(resolve => {
+                    if (pc1.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        pc1.onicegatheringstatechange = () => {
+                            if (pc1.iceGatheringState === 'complete') resolve();
+                        };
+                    }
+                });
+                
+                // Send offer to MediaMTX WHEP endpoint
+                const response = await fetch(`http://${SERVER_IP}:${WEBRTC_PORT}/cam1/whep`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/sdp' },
+                    body: pc1.localDescription.sdp
+                });
+                
+                if (!response.ok) throw new Error('Failed to connect');
+                
+                const answerSdp = await response.text();
+                await pc1.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerSdp
+                });
+                
+                document.getElementById('protocol1').textContent = 'WebRTC';
+                
+            } catch (error) {
+                console.error('WebRTC error:', error);
+                status.textContent = 'ERROR';
+                status.className = 'status-badge offline';
+                // Fall back to HLS
+                switchToHLS();
+            }
+        }
+        
+        async function startWebRTC2() {
+            const video = document.getElementById('video2');
+            const status = document.getElementById('status2');
+            
+            try {
+                status.textContent = 'CONNECTING...';
+                status.className = 'status-badge';
+                
+                pc2 = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                pc2.addTransceiver('video', { direction: 'recvonly' });
+                
+                pc2.ontrack = (event) => {
+                    video.srcObject = event.streams[0];
+                    status.textContent = 'LIVE';
+                    status.className = 'status-badge live';
+                };
+                
+                const offer = await pc2.createOffer();
+                await pc2.setLocalDescription(offer);
+                
+                await new Promise(resolve => {
+                    if (pc2.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        pc2.onicegatheringstatechange = () => {
+                            if (pc2.iceGatheringState === 'complete') resolve();
+                        };
+                    }
+                });
+                
+                const response = await fetch(`http://${SERVER_IP}:${WEBRTC_PORT}/cam1-sub/whep`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/sdp' },
+                    body: pc2.localDescription.sdp
+                });
+                
+                if (!response.ok) throw new Error('Failed to connect');
+                
+                const answerSdp = await response.text();
+                await pc2.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerSdp
+                });
+                
+            } catch (error) {
+                console.error('WebRTC error:', error);
+                status.textContent = 'ERROR';
+                status.className = 'status-badge offline';
+            }
+        }
+        
+        function switchToHLS() {
+            const video = document.getElementById('video1');
+            const status = document.getElementById('status1');
+            
+            if (pc1) {
+                pc1.close();
+                pc1 = null;
+            }
+            
+            // Use HLS with hls.js or native support
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(`http://${SERVER_IP}:${HLS_PORT}/cam1/index.m3u8`);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    status.textContent = 'LIVE';
+                    status.className = 'status-badge live';
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = `http://${SERVER_IP}:${HLS_PORT}/cam1/index.m3u8`;
+                video.addEventListener('loadedmetadata', () => {
+                    video.play();
+                    status.textContent = 'LIVE';
+                    status.className = 'status-badge live';
+                });
+            } else {
+                status.textContent = 'NO SUPPORT';
+                status.className = 'status-badge offline';
+            }
+            
+            document.getElementById('protocol1').textContent = 'HLS';
+        }
+        
+        function refreshStream() {
+            if (pc1) {
+                pc1.close();
+                pc1 = null;
+            }
+            startWebRTC();
+        }
+        
+        function refreshStream2() {
+            if (pc2) {
+                pc2.close();
+                pc2 = null;
+            }
+            startWebRTC2();
+        }
+        
+        // Auto-start on page load (with delay)
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                startWebRTC();
+                setTimeout(startWebRTC2, 1000);
+            }, 500);
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pc1) pc1.close();
+            if (pc2) pc2.close();
+        });
+    </script>
+    
+    <!-- Include hls.js for HLS fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+# MediaMTX Configuration for Raspberry Pi - Camera Streaming Server
+
+# General settings
+logLevel: info
+logDestinations: [stdout, file]
+logFile: mediamtx.log
+
+readTimeout: 10s
+writeTimeout: 10s
+
+# Enable protocols
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp]
+
+rtmp: yes
+rtmpAddress: :1935
+
+hls: yes
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+webrtcIPsFromInterfaces: yes
+webrtcLocalUDPAddress: :8189
+
+# Authentication - allow all for now
+authMethod: internal
+authInternalUsers:
+- user: any
+  pass:
+  ips: []
+  permissions:
+  - action: publish
+  - action: read
+  - action: playback
+- user: any
+  pass:
+  ips: ['127.0.0.1', '::1']
+  permissions:
+  - action: api
+  - action: metrics
+
+# Path configurations
+paths:
+  # Main camera stream from Hikvision
+  cam1:
+    source: rtsp://admin:Hik@12345@192.168.29.64:554/Streaming/Channels/101
+    sourceProtocol: tcp
+    sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 10s
+    sourceOnDemandCloseAfter: 30s
+  
+  # Low-res sub-stream
+  cam1-sub:
+    source: rtsp://admin:Hik@12345@192.168.29.64:554/Streaming/Channels/102
+    sourceProtocol: tcp
+    sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 10s
+    sourceOnDemandCloseAfter: 30s
+
+  # Default path
+  all_others:
+    source: publisher
