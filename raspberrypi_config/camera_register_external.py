@@ -129,6 +129,18 @@ def get_stream_urls():
     
     elif USE_TAILSCALE:
         # Use Tailscale VPN IP
+        # Try to auto-detect Tailscale IP if not provided
+        if not TAILSCALE_IP:
+            try:
+                import subprocess
+                result = subprocess.run(['tailscale', 'ip', '-4'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    TAILSCALE_IP = result.stdout.strip()
+                    print(f"✓ Auto-detected Tailscale IP: {TAILSCALE_IP}")
+            except:
+                pass
+        
         ip = TAILSCALE_IP or LOCAL_IP
         return {
             'webrtc': {
@@ -138,6 +150,10 @@ def get_stream_urls():
             'hls': {
                 'main': f"http://{ip}:8888/cam1/index.m3u8",
                 'sub': f"http://{ip}:8888/cam1-sub/index.m3u8"
+            },
+            'rtsp': {
+                'main': f"rtsp://{ip}:8554/cam1",
+                'sub': f"rtsp://{ip}:8554/cam1-sub"
             },
             'note': f'via Tailscale VPN {ip}'
         }
