@@ -18,7 +18,7 @@ import {
 } from '@/api/cameras'
 import { getPits } from '@/api/pits'
 import type { Pit } from '@/types/pit'
-import { VideoPlayer } from '@/components/video/VideoPlayer'
+import { CameraStreamPlayer } from '@/components/video/CameraStreamPlayer'
 
 export default function CamerasPage() {
   const { user } = useSelector((state: RootState) => state.auth)
@@ -394,9 +394,9 @@ export default function CamerasPage() {
             
             <div className="bg-black rounded-lg overflow-hidden aspect-video">
               {selectedCamera.primary_stream_url ? (
-                <VideoPlayer
+                <CameraStreamPlayer
                   streamUrl={selectedCamera.primary_stream_url}
-                  type={selectedCamera.primary_stream_url.includes('webrtc') ? 'webrtc' : 'hls'}
+                  className="w-full h-full"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">

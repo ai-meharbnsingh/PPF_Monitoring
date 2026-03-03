@@ -74,26 +74,27 @@ class CameraRegistrar:
         return socket.gethostname()
     
     def get_stream_urls(self, ip=None):
-        """Generate stream URLs"""
+        """Generate stream URLs for MediaMTX streams"""
         if not ip:
             ip = self.get_ip_address()
         
+        # MediaMTX exposes streams on these endpoints
         return {
             'webrtc': {
-                'main': f"http://{ip}:{MEDIAMTX_PORTS['webrtc']}/cam1/whep",
-                'sub': f"http://{ip}:{MEDIAMTX_PORTS['webrtc']}/cam1-sub/whep"
+                'main': f"http://{ip}:8889/cam1/whep",
+                'sub': f"http://{ip}:8889/cam1-sub/whep"
             },
             'hls': {
-                'main': f"http://{ip}:{MEDIAMTX_PORTS['hls']}/cam1/index.m3u8",
-                'sub': f"http://{ip}:{MEDIAMTX_PORTS['hls']}/cam1-sub/index.m3u8"
+                'main': f"http://{ip}:8888/cam1/index.m3u8",
+                'sub': f"http://{ip}:8888/cam1-sub/index.m3u8"
             },
             'rtsp': {
-                'main': f"rtsp://{ip}:{MEDIAMTX_PORTS['rtsp']}/cam1",
-                'sub': f"rtsp://{ip}:{MEDIAMTX_PORTS['rtsp']}/cam1-sub"
+                'main': f"rtsp://{ip}:8554/cam1",
+                'sub': f"rtsp://{ip}:8554/cam1-sub"
             },
             'rtmp': {
-                'main': f"rtmp://{ip}:{MEDIAMTX_PORTS['rtmp']}/cam1",
-                'sub': f"rtmp://{ip}:{MEDIAMTX_PORTS['rtmp']}/cam1-sub"
+                'main': f"rtmp://{ip}:1935/cam1",
+                'sub': f"rtmp://{ip}:1935/cam1-sub"
             }
         }
     
