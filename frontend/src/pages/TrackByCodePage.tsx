@@ -87,13 +87,20 @@ export default function TrackByCodePage() {
       if (job.camera_is_online) {
         try {
           const streamRes = await fetch(`/api/v1/track/code/${lookupCode}/stream-token`)
+          console.log('Stream token response status:', streamRes.status)
           if (streamRes.ok) {
             const stream = await streamRes.json()
+            console.log('Stream token data:', stream)
             setStreamUrls({ webrtcUrl: stream.webrtc_url ?? '', hlsUrl: stream.hls_url ?? '' })
+          } else {
+            const errorText = await streamRes.text()
+            console.error('Stream token error:', streamRes.status, errorText)
           }
-        } catch {
-          // Stream token is optional — video section will show offline state
+        } catch (err) {
+          console.error('Stream token fetch error:', err)
         }
+      } else {
+        console.log('Camera is offline, skipping stream token fetch')
       }
 
     } catch (error) {

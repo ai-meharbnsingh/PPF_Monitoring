@@ -58,6 +58,8 @@ export function VideoPlayer({
   }, [])
 
   useEffect(() => {
+    console.log('VideoPlayer mounted/updated:', { webrtcUrl, hlsUrl, isOnline })
+    
     if (!isOnline) {
       setProtocol('offline')
       return
