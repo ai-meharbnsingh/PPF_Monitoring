@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from src.models.sensor_data import SensorData
     from src.models.alert import Alert
     from src.models.pit_alert_config import PitAlertConfig
+    from src.models.camera import Camera
 
 
 class Pit(Base, TimestampMixin):
@@ -54,6 +55,9 @@ class Pit(Base, TimestampMixin):
     workshop: Mapped["Workshop"] = relationship("Workshop", back_populates="pits")
     device: Mapped[Optional["Device"]] = relationship(
         "Device", back_populates="pit", uselist=False, lazy="selectin"
+    )
+    camera: Mapped[Optional["Camera"]] = relationship(
+        "Camera", back_populates="pit", uselist=False, lazy="selectin"
     )
     jobs: Mapped[List["Job"]] = relationship(
         "Job", back_populates="pit", order_by="Job.created_at.desc()"

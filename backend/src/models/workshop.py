@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from src.models.subscription import Subscription
     from src.models.alert import Alert, AlertConfig
     from src.models.job import Job
+    from src.models.camera import Camera
 
 
 class Workshop(Base, TimestampMixin):
@@ -58,6 +59,7 @@ class Workshop(Base, TimestampMixin):
         lazy="selectin"
     )
     devices: Mapped[List["Device"]] = relationship("Device", back_populates="workshop")
+    cameras: Mapped[List["Camera"]] = relationship("Camera", back_populates="workshop", lazy="selectin")
     subscriptions: Mapped[List["Subscription"]] = relationship("Subscription", back_populates="workshop")
     alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="workshop")
     jobs: Mapped[List["Job"]] = relationship("Job", back_populates="workshop")

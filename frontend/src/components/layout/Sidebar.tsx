@@ -10,6 +10,7 @@ import {
   X,
   Clock,
   List,
+  Video,
 } from 'lucide-react'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import type { UserRole } from '@/types/common'
@@ -44,6 +45,12 @@ const NAV_ITEMS: NavItem[] = [
     to: '/admin/devices',
     label: 'Devices',
     icon: <Cpu className="h-5 w-5" />,
+    roles: ['super_admin', 'owner'],
+  },
+  {
+    to: '/admin/cameras',
+    label: 'Cameras',
+    icon: <Video className="h-5 w-5" />,
     roles: ['super_admin', 'owner'],
   },
   {

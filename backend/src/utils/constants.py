@@ -172,6 +172,9 @@ class WSEvent(str, Enum):
     DEVICE_OFFLINE = "device_offline"
     DEVICE_ONLINE = "device_online"
     CAMERA_OFFLINE = "camera_offline"
+    CAMERA_ONLINE = "camera_online"
+    CAMERA_DISCOVERED = "camera_discovered"
+    CAMERA_ASSIGNED = "camera_assigned"
     PONG = "pong"
 
 

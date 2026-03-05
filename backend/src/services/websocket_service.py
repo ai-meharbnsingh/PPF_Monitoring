@@ -217,3 +217,43 @@ async def broadcast_device_offline(workshop_id: int, pit_id: int, device_id: str
     }
     await manager.broadcast_to_workshop(workshop_id, event)
     await manager.broadcast_to_pit(pit_id, event)
+
+
+async def broadcast_camera_notification(
+    workshop_id: int,
+    notification_type: str,
+    camera,
+    message: str
+) -> None:
+    """
+    Broadcast camera notification to workshop clients.
+    
+    Args:
+        workshop_id: Workshop to broadcast to
+        notification_type: Type of notification (camera_discovered, camera_online, camera_offline, camera_assigned)
+        camera: Camera model instance
+        message: Human-readable message
+    """
+    from src.models.camera import Camera
+    
+    event = {
+        "event": "camera_notification",
+        "workshop_id": workshop_id,
+        "data": {
+            "type": notification_type,
+            "camera": {
+                "id": camera.id,
+                "device_id": camera.device_id,
+                "name": camera.name,
+                "ip_address": camera.ip_address,
+                "status": camera.status,
+                "is_online": camera.is_online,
+                "is_assigned": camera.is_assigned,
+                "primary_stream_url": camera.primary_stream_url,
+            },
+            "message": message,
+            "timestamp": utc_now().isoformat(),
+        },
+    }
+    await manager.broadcast_to_workshop(workshop_id, event)
+    logger.info(f"📡 Camera notification broadcast: {notification_type} - {camera.device_id}")

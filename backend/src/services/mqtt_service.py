@@ -128,9 +128,14 @@ def _on_connect(client: mqtt.Client, userdata, flags, rc: int) -> None:
         client.subscribe(MQTT_SUBSCRIBE_SENSOR_DATA, qos=settings.MQTT_QOS)
         client.subscribe(MQTT_SUBSCRIBE_DEVICE_STATUS, qos=settings.MQTT_QOS)
         client.subscribe(MQTT_SUBSCRIBE_PROVISIONING, qos=settings.MQTT_QOS)
+        # Subscribe to camera topics
+        client.subscribe("workshop/+/cameras/register", qos=settings.MQTT_QOS)
+        client.subscribe("workshop/+/cameras/heartbeat", qos=settings.MQTT_QOS)
+        client.subscribe("workshop/+/cameras/status", qos=settings.MQTT_QOS)
         logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_SENSOR_DATA}")
         logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_DEVICE_STATUS}")
         logger.info(f"Subscribed to: {MQTT_SUBSCRIBE_PROVISIONING}")
+        logger.info("Subscribed to: workshop/+/cameras/+")
     else:
         error_messages = {
             1: "Connection refused — incorrect protocol version",
@@ -185,7 +190,7 @@ def _on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> Non
             _handle_sensor_message(topic, payload_str),
             _event_loop,
         )
-    elif "/status" in topic:
+    elif "/status" in topic and "/cameras/" not in topic:
         asyncio.run_coroutine_threadsafe(
             _handle_device_status(topic, payload_str),
             _event_loop,
@@ -194,6 +199,21 @@ def _on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> Non
         logger.warning(f"PROV-ROUTING: Submitting to event loop")
         asyncio.run_coroutine_threadsafe(
             _handle_provisioning_announce(topic, payload_str),
+            _event_loop,
+        )
+    elif "/cameras/register" in topic:
+        asyncio.run_coroutine_threadsafe(
+            _handle_camera_registration(topic, payload_str),
+            _event_loop,
+        )
+    elif "/cameras/heartbeat" in topic:
+        asyncio.run_coroutine_threadsafe(
+            _handle_camera_heartbeat(topic, payload_str),
+            _event_loop,
+        )
+    elif "/cameras/status" in topic:
+        asyncio.run_coroutine_threadsafe(
+            _handle_camera_status(topic, payload_str),
             _event_loop,
         )
     else:
@@ -450,6 +470,195 @@ def publish_provisioning_config(
             exc_info=True,
         )
         return False
+
+
+async def _handle_camera_registration(topic: str, payload_str: str) -> None:
+    """
+    Handle camera registration messages from Raspberry Pi or IP cameras.
+    Creates or updates camera record in database.
+    """
+    import json
+    from sqlalchemy import select
+    from src.models.camera import Camera
+    from src.services.websocket_service import broadcast_camera_notification
+    
+    try:
+        data = json.loads(payload_str)
+    except json.JSONDecodeError as e:
+        logger.warning(f"Invalid camera registration JSON on '{topic}': {e}")
+        return
+    
+    device_id = data.get("device_id", "")
+    workshop_id = data.get("workshop_id")
+    
+    if not device_id or not workshop_id:
+        logger.warning(f"Camera registration missing device_id or workshop_id: {data}")
+        return
+    
+    try:
+        async with get_db_context() as db:
+            # Check if camera already exists
+            result = await db.execute(
+                select(Camera).where(Camera.device_id == device_id)
+            )
+            camera = result.scalar_one_or_none()
+            
+            stream_urls = data.get("stream_urls", {})
+            mediamtx_config = data.get("mediamtx_config", {})
+            capabilities = data.get("capabilities", {})
+            
+            if camera is None:
+                # New camera - create record
+                camera = Camera(
+                    workshop_id=workshop_id,
+                    device_id=device_id,
+                    name=data.get("name", f"Camera {device_id}"),
+                    description=data.get("description"),
+                    camera_type=data.get("camera_type", "ip_camera"),
+                    model=data.get("model"),
+                    manufacturer=data.get("manufacturer"),
+                    ip_address=data.get("ip_address", ""),
+                    hostname=data.get("hostname"),
+                    stream_urls=stream_urls,
+                    mediamtx_config=mediamtx_config,
+                    capabilities=capabilities,
+                    protocols=capabilities.get("protocols", []),
+                    resolutions=capabilities.get("resolutions", []),
+                    has_audio=capabilities.get("has_audio", False),
+                    has_ptz=capabilities.get("has_ptz", False),
+                    status="online",
+                    is_online=True,
+                    discovered_via="mqtt",
+                    firmware_version=data.get("firmware_version"),
+                    last_seen=utc_now(),
+                )
+                db.add(camera)
+                await db.commit()
+                await db.refresh(camera)
+                
+                logger.info(f"🎥 New camera registered: {device_id} ({camera.ip_address})")
+                
+                # Broadcast notification to WebSocket clients
+                try:
+                    await broadcast_camera_notification(
+                        workshop_id=workshop_id,
+                        notification_type="camera_discovered",
+                        camera=camera,
+                        message=f"New camera discovered: {camera.name}"
+                    )
+                except Exception as ws_error:
+                    logger.warning(f"WebSocket broadcast failed: {ws_error}")
+            else:
+                # Existing camera - update info
+                camera.ip_address = data.get("ip_address", camera.ip_address)
+                camera.hostname = data.get("hostname", camera.hostname)
+                camera.stream_urls = stream_urls or camera.stream_urls
+                camera.mediamtx_config = mediamtx_config or camera.mediamtx_config
+                camera.is_online = True
+                camera.status = "online"
+                camera.last_seen = utc_now()
+                
+                if data.get("firmware_version"):
+                    camera.firmware_version = data.get("firmware_version")
+                
+                await db.commit()
+                logger.info(f"🎥 Camera re-registered: {device_id} ({camera.ip_address})")
+                
+    except Exception as e:
+        logger.error(f"Error handling camera registration for '{device_id}': {e}", exc_info=True)
+
+
+async def _handle_camera_heartbeat(topic: str, payload_str: str) -> None:
+    """
+    Handle camera heartbeat messages.
+    Updates last_seen timestamp and online status.
+    """
+    import json
+    from sqlalchemy import select, update
+    from src.models.camera import Camera
+    
+    try:
+        data = json.loads(payload_str)
+    except json.JSONDecodeError as e:
+        logger.debug(f"Invalid camera heartbeat JSON on '{topic}': {e}")
+        return
+    
+    device_id = data.get("device_id", "")
+    if not device_id:
+        return
+    
+    try:
+        async with get_db_context() as db:
+            # Update camera heartbeat
+            await db.execute(
+                update(Camera)
+                .where(Camera.device_id == device_id)
+                .values(
+                    is_online=True,
+                    status="online",
+                    last_seen=utc_now(),
+                    ip_address=data.get("ip_address", Camera.ip_address)
+                )
+            )
+            await db.commit()
+            logger.debug(f"💓 Camera heartbeat: {device_id}")
+    except Exception as e:
+        logger.error(f"Error handling camera heartbeat for '{device_id}': {e}")
+
+
+async def _handle_camera_status(topic: str, payload_str: str) -> None:
+    """
+    Handle camera status updates (online/offline).
+    """
+    import json
+    from sqlalchemy import select, update
+    from src.models.camera import Camera
+    from src.services.websocket_service import broadcast_camera_notification
+    
+    try:
+        data = json.loads(payload_str)
+    except json.JSONDecodeError as e:
+        logger.warning(f"Invalid camera status JSON on '{topic}': {e}")
+        return
+    
+    device_id = data.get("device_id", "")
+    status = data.get("status", "")
+    workshop_id = data.get("workshop_id")
+    
+    if not device_id or status not in ("online", "offline"):
+        return
+    
+    is_online = status == "online"
+    
+    try:
+        async with get_db_context() as db:
+            result = await db.execute(
+                select(Camera).where(Camera.device_id == device_id)
+            )
+            camera = result.scalar_one_or_none()
+            
+            if camera:
+                camera.is_online = is_online
+                camera.status = status
+                if is_online:
+                    camera.last_seen = utc_now()
+                await db.commit()
+                
+                logger.info(f"🎥 Camera '{device_id}' → {status.upper()}")
+                
+                # Broadcast status change
+                try:
+                    notification_type = "camera_online" if is_online else "camera_offline"
+                    await broadcast_camera_notification(
+                        workshop_id=workshop_id or camera.workshop_id,
+                        notification_type=notification_type,
+                        camera=camera,
+                        message=f"Camera {camera.name} is {status}"
+                    )
+                except Exception as ws_error:
+                    logger.warning(f"WebSocket broadcast failed: {ws_error}")
+    except Exception as e:
+        logger.error(f"Error handling camera status for '{device_id}': {e}", exc_info=True)
 
 
 def setup_mqtt(loop: asyncio.AbstractEventLoop) -> None:

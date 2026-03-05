@@ -20,6 +20,7 @@ from src.api.routes import (
     admin_devices,
     alerts,
     auth,
+    cameras,
     devices,
     firmware,
     health,
@@ -257,6 +258,7 @@ app.include_router(firmware.router, prefix=API)
 # Admin utilities
 app.include_router(admin.router, prefix=API)
 app.include_router(admin_devices.router, prefix=API)
+app.include_router(cameras.router, prefix=API)  # Camera management
 
 
 @app.get("/")

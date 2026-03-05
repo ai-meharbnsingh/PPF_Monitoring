@@ -72,31 +72,14 @@ export default function StaffPage() {
   })
   const editForm = useForm<EditFormValues>()
 
-  // Debug logging
-  console.log('StaffPage - userRole:', userRole, 'isSuperAdmin:', isSuperAdmin)
-  console.log('StaffPage - workshops:', workshops.length, workshops)
-
   // Load workshops for super admin
   const loadWorkshops = useCallback(async () => {
-    if (!isSuperAdmin) {
-      console.log('Not loading workshops - not super admin')
-      return
-    }
+    if (!isSuperAdmin) return
     try {
-      console.log('Loading workshops...')
       const resp = await workshopsApi.getAll()
-      console.log('Workshops loaded:', resp)
       setWorkshops(resp)
     } catch (err: any) {
-      console.error('Failed to load workshops:', err)
-      console.error('Error details:', {
-        message: err?.message,
-        status: err?.response?.status,
-        statusText: err?.response?.statusText,
-        data: err?.response?.data,
-        url: err?.config?.url,
-      })
-      toast.error(`Failed to load workshops: ${err?.response?.status || ''} ${err?.message || 'Unknown error'}`)
+      toast.error('Failed to load workshops')
     }
   }, [isSuperAdmin])
 
@@ -362,16 +345,7 @@ export default function StaffPage() {
       {/* Create modal */}
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Team Member" size="md">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-          {/* Debug info - HIGHLY VISIBLE */}
-          <div className="bg-yellow-500/20 border-2 border-yellow-500 rounded-lg px-4 py-3 mb-4">
-            <p className="text-yellow-300 font-bold text-sm">DEBUG INFO:</p>
-            <p className="text-white text-sm">Role from Redux: <span className="text-cyan-300">{userRole}</span></p>
-            <p className="text-white text-sm">Is SuperAdmin: <span className={isSuperAdmin ? 'text-green-400' : 'text-red-400'}>{isSuperAdmin ? 'YES ✓' : 'NO ✗'}</span></p>
-            <p className="text-white text-sm">Workshops loaded: <span className="text-cyan-300">{workshops.length}</span></p>
-            <p className="text-white text-sm">Workshop names: <span className="text-cyan-300">{workshops.map(w => w.name).join(', ') || 'NONE'}</span></p>
-          </div>
-
-          {/* Workshop selector - ALWAYS show for now to debug */}
+          {/* Workshop selector */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">
               Workshop *
