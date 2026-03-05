@@ -222,11 +222,24 @@ async def public_stream_token_by_code(
         )
 
     pit = job.pit
-    if pit is None or not pit.camera_rtsp_url:
+    # Check for camera via new Camera model OR legacy camera_rtsp_url
+    has_camera = (pit.camera is not None) or bool(pit.camera_rtsp_url)
+    if pit is None or not has_camera:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No camera configured for this bay",
         )
+    
+    # Load camera relationship if it exists (needed for _resolve_stream_path)
+    if pit.camera:
+        from sqlalchemy.orm import selectinload
+        from src.models.camera import Camera
+        result = await db.execute(
+            select(Pit)
+            .where(Pit.id == pit.id)
+            .options(selectinload(Pit.camera))
+        )
+        pit = result.scalar_one()
 
     settings = get_settings()
     token = generate_stream_token()
