@@ -34,13 +34,25 @@ export function CameraStreamPlayer({
   // Detect stream type from URL
   const detectStreamType = (): 'webrtc' | 'hls' => {
     if (type !== 'auto') return type
+    
+    // Force HLS for Tailscale Funnel or HTTPS WHEP URLs
+    // WebRTC doesn't work through Tailscale Funnel (requires UDP)
+    if (streamUrl.includes('ts.net') || streamUrl.includes('tailscale')) {
+      console.log('Tailscale Funnel detected, using HLS')
+      return 'hls'
+    }
+    if (streamUrl.startsWith('https://') && streamUrl.includes('/whep')) {
+      console.log('HTTPS WHEP detected, using HLS instead')
+      return 'hls'
+    }
+    
     if (streamUrl.includes('/whep') || streamUrl.includes('webrtc')) return 'webrtc'
     if (streamUrl.includes('.m3u8') || streamUrl.includes('/hls')) return 'hls'
     if (streamUrl.includes('rtsp://')) {
       console.warn('RTSP not supported in browser, trying HLS fallback')
       return 'hls'
     }
-    return 'webrtc' // Default to WebRTC
+    return 'hls' // Default to HLS for better compatibility
   }
 
   const cleanup = () => {

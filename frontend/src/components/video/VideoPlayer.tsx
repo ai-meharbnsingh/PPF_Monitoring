@@ -140,10 +140,16 @@ export function VideoPlayer({
       }
     }
 
-    // Skip WebRTC when URL is empty (public Funnel mode — UDP won't work)
-    if (webrtcUrl) {
+    // Skip WebRTC for Tailscale Funnel or HTTPS URLs (UDP won't work through funnel)
+    // HLS works perfectly over HTTPS
+    const isTailscaleFunnel = webrtcUrl.includes('ts.net') || webrtcUrl.includes('tailscale')
+    const isHttpsWebRTC = webrtcUrl.startsWith('https://') && webrtcUrl.includes('/whep')
+    
+    if (webrtcUrl && !isTailscaleFunnel && !isHttpsWebRTC) {
       void tryWebRTC()
     } else {
+      // Use HLS for funnel or if WebRTC URL is HTTPS
+      console.log('Using HLS for Tailscale Funnel / HTTPS stream')
       void tryHLS()
     }
 
