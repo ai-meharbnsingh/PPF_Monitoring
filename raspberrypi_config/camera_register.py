@@ -23,6 +23,11 @@ CAMERA_ID = os.getenv('CAMERA_ID', 'pi_camera_01')
 CAMERA_NAME = os.getenv('CAMERA_NAME', 'Raspberry Pi Camera 1')
 WORKSHOP_ID = os.getenv('WORKSHOP_ID', '1')  # Default workshop ID
 
+# Tailscale Funnel Configuration (for public access)
+# Set USE_TAILSCALE_FUNNEL=true to enable public URLs
+USE_TAILSCALE_FUNNEL = os.getenv('USE_TAILSCALE_FUNNEL', 'true').lower() == 'true'
+TAILSCALE_FUNNEL_HOST = os.getenv('TAILSCALE_FUNNEL_HOST', 'piwifi.taile42746.ts.net')
+
 # MediaMTX Stream URLs
 MEDIAMTX_HOST = os.getenv('MEDIAMTX_HOST', 'localhost')
 MEDIAMTX_PORTS = {
@@ -78,7 +83,26 @@ class CameraRegistrar:
         if not ip:
             ip = self.get_ip_address()
         
-        # MediaMTX exposes streams on these endpoints
+        # Use Tailscale Funnel for public HTTPS access if enabled
+        if USE_TAILSCALE_FUNNEL and TAILSCALE_FUNNEL_HOST:
+            # Tailscale Funnel provides HTTPS access to local services
+            return {
+                'webrtc': {
+                    'main': f"https://{TAILSCALE_FUNNEL_HOST}/cam1/whep",
+                    'sub': f"https://{TAILSCALE_FUNNEL_HOST}/cam1-sub/whep"
+                },
+                'hls': {
+                    'main': f"https://{TAILSCALE_FUNNEL_HOST}/cam1/index.m3u8",
+                    'sub': f"https://{TAILSCALE_FUNNEL_HOST}/cam1-sub/index.m3u8"
+                },
+                'rtsp': {
+                    'main': f"rtsp://{ip}:8554/cam1",
+                    'sub': f"rtsp://{ip}:8554/cam1-sub"
+                },
+                'note': f'via Tailscale Funnel ({TAILSCALE_FUNNEL_HOST})'
+            }
+        
+        # Default: Local network URLs
         return {
             'webrtc': {
                 'main': f"http://{ip}:8889/cam1/whep",
@@ -202,6 +226,11 @@ class CameraRegistrar:
         print(f"Camera ID: {CAMERA_ID}")
         print(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
         print(f"Workshop: {WORKSHOP_ID}")
+        if USE_TAILSCALE_FUNNEL and TAILSCALE_FUNNEL_HOST:
+            print(f"Mode: Tailscale Funnel (Public HTTPS)")
+            print(f"Funnel Host: {TAILSCALE_FUNNEL_HOST}")
+        else:
+            print(f"Mode: Local Network Only")
         print("=" * 60)
         
         try:
