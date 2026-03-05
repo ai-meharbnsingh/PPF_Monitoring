@@ -4,7 +4,7 @@
  */
 
 import apiClient from './client'
-import type { Camera, CameraAssignmentRequest } from '@/types/camera'
+import type { Camera } from '@/types/camera'
 
 export interface CameraApiResponse {
   data: Camera | Camera[]

@@ -4,12 +4,13 @@ Handles camera discovery, registration, assignment, and management.
 """
 
 from typing import List, Optional
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, and_
 from sqlalchemy.orm import selectinload
 
-from src.config.database import get_async_session
+from src.config.database import get_db
 from src.models.camera import Camera
 from src.models.pit import Pit
 from src.models.workshop import Workshop
@@ -21,8 +22,9 @@ from src.schemas.camera import (
     CameraAssignRequest,
     CameraDiscoveryRequest,
 )
-from src.services.auth import get_current_user, get_current_active_user
+from src.api.dependencies import get_current_user
 from src.models.user import User
+from src.services.camera_discovery import discover_mediamtx_cameras
 
 router = APIRouter(prefix="/cameras", tags=["cameras"])
 
@@ -31,8 +33,8 @@ router = APIRouter(prefix="/cameras", tags=["cameras"])
 async def get_discovered_cameras(
     workshop_id: int = Query(..., description="Workshop ID"),
     status: Optional[str] = Query(None, description="Filter by status: pending, online, offline"),
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all discovered/registered cameras for a workshop.
@@ -66,8 +68,8 @@ async def get_discovered_cameras(
 async def get_workshop_cameras(
     workshop_id: int,
     include_assigned: bool = Query(True, description="Include assigned cameras"),
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get all cameras for a workshop."""
     # Verify access
@@ -94,8 +96,8 @@ async def get_workshop_cameras(
 @router.get("/{camera_id}", response_model=CameraResponse)
 async def get_camera(
     camera_id: int,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get a specific camera by ID."""
     query = select(Camera).where(Camera.id == camera_id).options(selectinload(Camera.pit))
@@ -121,8 +123,8 @@ async def get_camera(
 @router.post("/register", response_model=CameraResponse, status_code=status.HTTP_201_CREATED)
 async def register_camera(
     camera_data: CameraDiscoveryRequest,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Register a new camera (manual registration or from MQTT discovery).
@@ -178,12 +180,13 @@ async def register_camera(
 @router.post("/discover", response_model=dict)
 async def trigger_camera_discovery(
     workshop_id: int = Query(..., description="Workshop ID to scan"),
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Trigger a camera discovery scan on the network.
-    This will scan for cameras and add them to the discovered list.
+    Queries MediaMTX instances associated with workshop cameras for active streams.
+    Any new streams found are auto-registered as pending cameras.
     """
     # Verify access
     if current_user.workshop_id != workshop_id and current_user.role != "super_admin":
@@ -191,25 +194,67 @@ async def trigger_camera_discovery(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized"
         )
-    
-    # TODO: Implement actual network scan
-    # For now, return info about discovered cameras
+
+    # Collect unique MediaMTX hosts from existing cameras in this workshop
+    existing_result = await session.execute(
+        select(Camera).where(Camera.workshop_id == workshop_id)
+    )
+    existing_cameras = existing_result.scalars().all()
+    existing_device_ids = {c.device_id for c in existing_cameras}
+
+    # Gather MediaMTX hosts to probe from camera configs
+    mtx_hosts: dict[str, dict] = {}
+    for cam in existing_cameras:
+        cfg = cam.mediamtx_config
+        if cfg and isinstance(cfg, dict) and cfg.get("host"):
+            host = cfg["host"]
+            mtx_hosts[host] = cfg.get("ports", {})
+        elif cam.ip_address:
+            mtx_hosts.setdefault(cam.ip_address, {})
+
+    # Query each MediaMTX host for active paths
+    new_cameras = []
+    for host, ports in mtx_hosts.items():
+        discovered = await discover_mediamtx_cameras(host, ports)
+        for cam_data in discovered:
+            if cam_data["device_id"] not in existing_device_ids:
+                camera = Camera(
+                    workshop_id=workshop_id,
+                    device_id=cam_data["device_id"],
+                    name=cam_data["name"],
+                    ip_address=cam_data["ip_address"],
+                    camera_type=cam_data["camera_type"],
+                    stream_urls=cam_data["stream_urls"],
+                    is_online=cam_data["is_online"],
+                    status="online" if cam_data["is_online"] else "pending",
+                    discovered_via="scan",
+                )
+                session.add(camera)
+                new_cameras.append(camera)
+                existing_device_ids.add(cam_data["device_id"])
+
+    if new_cameras:
+        await session.commit()
+        for cam in new_cameras:
+            await session.refresh(cam)
+
+    # Return all unassigned cameras (existing + new)
     result = await session.execute(
         select(Camera).where(
             and_(
                 Camera.workshop_id == workshop_id,
                 Camera.is_assigned == False,
-                Camera.status == "online"
             )
         )
     )
     available_cameras = result.scalars().all()
-    
+
     return {
-        "message": "Discovery triggered",
+        "message": f"Discovery complete. Found {len(new_cameras)} new camera(s).",
         "workshop_id": workshop_id,
+        "new_cameras": len(new_cameras),
         "available_cameras": len(available_cameras),
-        "cameras": [c.to_dict() for c in available_cameras]
+        "cameras": [c.to_dict() for c in available_cameras],
     }
 
 
@@ -217,8 +262,8 @@ async def trigger_camera_discovery(
 async def assign_camera_to_pit(
     camera_id: int,
     assign_data: CameraAssignRequest,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Assign a camera to a pit.
@@ -282,8 +327,8 @@ async def assign_camera_to_pit(
 @router.post("/{camera_id}/unassign", response_model=CameraResponse)
 async def unassign_camera(
     camera_id: int,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Unassign a camera from its pit."""
     result = await session.execute(
@@ -317,8 +362,8 @@ async def unassign_camera(
 async def update_camera(
     camera_id: int,
     camera_data: CameraUpdate,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update camera details."""
     result = await session.execute(
@@ -353,8 +398,8 @@ async def update_camera(
 @router.delete("/{camera_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_camera(
     camera_id: int,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a camera."""
     result = await session.execute(
@@ -384,7 +429,7 @@ async def delete_camera(
 @router.post("/{camera_id}/heartbeat", response_model=dict)
 async def camera_heartbeat(
     camera_id: int,
-    session: AsyncSession = Depends(get_async_session),
+    session: AsyncSession = Depends(get_db),
 ):
     """
     Receive heartbeat from camera (called by MQTT subscriber).
@@ -407,8 +452,8 @@ async def camera_heartbeat(
 @router.get("/pit/{pit_id}", response_model=Optional[CameraResponse])
 async def get_camera_by_pit(
     pit_id: int,
-    session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get the camera assigned to a specific pit."""
     # Verify pit access

@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 // ── Lazy-loaded pages ──────────────────────────────────────────────────────────
 import { lazy, Suspense } from 'react'
 import { PageSpinner } from '@/components/ui/Spinner'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const PublicSplashPage = lazy(() => import('@/pages/PublicSplashPage'))
@@ -17,6 +18,7 @@ const JobDetailPage = lazy(() => import('@/pages/JobDetailPage'))
 const AlertsPage = lazy(() => import('@/pages/AlertsPage'))
 const AlertConfigPage = lazy(() => import('@/pages/AlertConfigPage'))
 const DevicesPage = lazy(() => import('@/pages/DevicesPage'))
+const CamerasPage = lazy(() => import('@/pages/CamerasPage'))
 const StaffPage = lazy(() => import('@/pages/StaffPage'))
 const TrackingPage = lazy(() => import('@/pages/TrackingPage'))
 const TrackByCodePage = lazy(() => import('@/pages/TrackByCodePage'))
@@ -26,7 +28,11 @@ const AdminDeviceAssignmentsPage = lazy(() => import('@/pages/admin/AdminDeviceA
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function Lazy({ element }: { element: React.ReactNode }) {
-  return <Suspense fallback={<PageSpinner />}>{element}</Suspense>
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageSpinner />}>{element}</Suspense>
+    </ErrorBoundary>
+  )
 }
 
 const router = createBrowserRouter([
@@ -104,6 +110,10 @@ const router = createBrowserRouter([
           {
             path: 'devices',
             element: <Lazy element={<DevicesPage />} />,
+          },
+          {
+            path: 'cameras',
+            element: <Lazy element={<CamerasPage />} />,
           },
           {
             path: 'staff',

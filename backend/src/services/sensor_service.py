@@ -138,6 +138,15 @@ async def store_sensor_reading(
         primary_type = device.primary_sensor_code   # 'DHT22' or 'BME680'
         aq_type = device.air_quality_sensor_code     # 'PMS5003' or None
 
+        temperature = _safe_float(payload.get("temperature"))
+        humidity = _safe_float(payload.get("humidity"))
+        pressure = _safe_float(payload.get("pressure"))
+        iaq = _safe_float(payload.get("iaq"))
+        pm25 = _safe_float(payload.get("pm25"))
+        pm10 = _safe_float(payload.get("pm10"))
+
+        is_valid = _validate_reading(temperature, humidity, pressure, iaq, pm25, pm10)
+
         reading = SensorData(
             device_id=device.device_id,
             pit_id=pit_id,
@@ -145,17 +154,17 @@ async def store_sensor_reading(
             primary_sensor_type=primary_type,
             air_quality_sensor_type=aq_type,
             # Shared fields (DHT22 or BME680)
-            temperature=_safe_float(payload.get("temperature")),
-            humidity=_safe_float(payload.get("humidity")),
+            temperature=temperature,
+            humidity=humidity,
             # BME680-specific (None for DHT22)
-            pressure=_safe_float(payload.get("pressure")),
+            pressure=pressure,
             gas_resistance=_safe_float(payload.get("gas_resistance")),
-            iaq=_safe_float(payload.get("iaq")),
+            iaq=iaq,
             iaq_accuracy=_safe_int(payload.get("iaq_accuracy")),
             # PMS5003-specific (None for BME680-only)
             pm1=_safe_float(payload.get("pm1")),
-            pm25=_safe_float(payload.get("pm25")),
-            pm10=_safe_float(payload.get("pm10")),
+            pm25=pm25,
+            pm10=pm10,
             particles_03um=_safe_int(payload.get("particles_03um")),
             particles_05um=_safe_int(payload.get("particles_05um")),
             particles_10um=_safe_int(payload.get("particles_10um")),
@@ -163,10 +172,16 @@ async def store_sensor_reading(
             particles_50um=_safe_int(payload.get("particles_50um")),
             particles_100um=_safe_int(payload.get("particles_100um")),
             # Validity
-            is_valid=True,
+            is_valid=is_valid,
             device_timestamp=device_ts,
             created_at=now,
         )
+
+        if not is_valid:
+            logger.warning(
+                f"Invalid sensor reading from device '{device.device_id}': "
+                f"temp={temperature} hum={humidity} pm25={pm25} pm10={pm10}"
+            )
 
         db.add(reading)
         await db.flush()  # get ID without commit
@@ -409,6 +424,30 @@ def _create_alert(
         email_sent=False,
         created_at=now,
     )
+
+
+def _validate_reading(
+    temperature: Optional[float],
+    humidity: Optional[float],
+    pressure: Optional[float],
+    iaq: Optional[float],
+    pm25: Optional[float],
+    pm10: Optional[float],
+) -> bool:
+    """Return False if any value is outside physically plausible sensor ranges."""
+    if temperature is not None and not (-40.0 <= temperature <= 80.0):
+        return False
+    if humidity is not None and not (0.0 <= humidity <= 100.0):
+        return False
+    if pressure is not None and not (300.0 <= pressure <= 1100.0):
+        return False
+    if iaq is not None and not (0.0 <= iaq <= 500.0):
+        return False
+    if pm25 is not None and not (0.0 <= pm25 <= 1000.0):
+        return False
+    if pm10 is not None and not (0.0 <= pm10 <= 1000.0):
+        return False
+    return True
 
 
 def _safe_float(value) -> Optional[float]:

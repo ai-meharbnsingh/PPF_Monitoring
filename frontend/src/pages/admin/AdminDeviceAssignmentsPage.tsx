@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import { devicesApi } from '@/api/devices'
+import { workshopsApi } from '@/api/workshops'
 import { pitsApi } from '@/api/pits'
 import type { PitSummary } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -57,24 +58,13 @@ export default function AdminDeviceAssignmentsPage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('ppf_token')
-      
-      const url = selectedWorkshop
-        ? `/api/v1/admin/devices/assignments?workshop_id=${selectedWorkshop}`
-        : '/api/v1/admin/devices/assignments'
-      
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      setAssignments(data.data?.items || [])
-
-      // Fetch workshops for filter
-      const wsRes = await fetch('/api/v1/workshops', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const wsData = await wsRes.json()
-      setWorkshops(wsData.data?.items || [])
+      const workshopId = selectedWorkshop ? Number(selectedWorkshop) : undefined
+      const [items, wsList] = await Promise.all([
+        devicesApi.listAssignments(workshopId),
+        workshopsApi.getAll(),
+      ])
+      setAssignments(items)
+      setWorkshops(wsList)
     } catch (error) {
       toast.error('Failed to fetch device assignments')
     } finally {
@@ -137,24 +127,12 @@ export default function AdminDeviceAssignmentsPage() {
 
     setIsUnassigning(true)
     try {
-      const token = localStorage.getItem('ppf_token')
-      const res = await fetch(
-        `/api/v1/admin/devices/${selectedDevice.device_id}/unassign`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      if (res.ok) {
-        toast.success('Device unassigned successfully')
-        setSelectedDevice(null)
-        fetchData()
-      } else {
-        toast.error('Failed to unassign device')
-      }
+      await devicesApi.unassign(selectedDevice.device_id)
+      toast.success('Device unassigned successfully')
+      setSelectedDevice(null)
+      fetchData()
     } catch (error) {
-      toast.error('Error unassigning device')
+      toast.error('Failed to unassign device')
     } finally {
       setIsUnassigning(false)
     }

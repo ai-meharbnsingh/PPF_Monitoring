@@ -79,6 +79,9 @@ video:
   mediamtx_webrtc_port: 8889
   mediamtx_hls_port: 8888
   stream_token_expire_hours: 1
+  # Public URL for remote access via Tailscale Funnel (e.g. https://piwifi.tailnet.ts.net)
+  # When set, HLS URLs use this instead of mediamtx_host. WebRTC is disabled (UDP won't traverse Funnel).
+  mediamtx_public_url: ""
 
 subscriptions:
   trial_days: 14

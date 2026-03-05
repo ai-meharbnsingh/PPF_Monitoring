@@ -165,6 +165,7 @@ class Settings(BaseSettings):
     MEDIAMTX_HOST: str = _yaml_config["video"]["mediamtx_host"]
     MEDIAMTX_RTSP_PORT: int = _yaml_config["video"]["mediamtx_rtsp_port"]
     MEDIAMTX_WEBRTC_PORT: int = _yaml_config["video"]["mediamtx_webrtc_port"]
+    MEDIAMTX_PUBLIC_URL: str = _yaml_config["video"].get("mediamtx_public_url", "")
     STREAM_TOKEN_SECRET: str
     STREAM_TOKEN_EXPIRE_HOURS: int = _yaml_config["video"]["stream_token_expire_hours"]
 

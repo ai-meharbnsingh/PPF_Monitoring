@@ -140,7 +140,12 @@ export function VideoPlayer({
       }
     }
 
-    void tryWebRTC()
+    // Skip WebRTC when URL is empty (public Funnel mode — UDP won't work)
+    if (webrtcUrl) {
+      void tryWebRTC()
+    } else {
+      void tryHLS()
+    }
 
     return () => {
       // Cleanup

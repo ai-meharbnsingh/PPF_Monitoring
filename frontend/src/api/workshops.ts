@@ -16,7 +16,6 @@ export interface CreateWorkshopPayload {
 export const workshopsApi = {
     getAll: async () => {
         const response = await client.get('/workshops')
-        console.log('Workshops API response:', response.data)
         const payload = response.data as any
 
         // Handle various response shapes robustly

@@ -172,7 +172,7 @@ export function CameraStreamPlayer({
         video.play().catch(console.error)
       })
 
-      hls.on(Hls.Events.ERROR, (event, data) => {
+      hls.on(Hls.Events.ERROR, (_event, data) => {
         console.error('HLS error:', data)
         if (data.fatal) {
           setError('Stream error')

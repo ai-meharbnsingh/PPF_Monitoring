@@ -18,6 +18,7 @@ from sqlalchemy.orm import selectinload
 from src.api.dependencies import get_current_user, get_staff_or_above, require_workshop_access
 from src.config.database import get_db
 from src.config.settings import get_settings
+from src.models.camera import Camera
 from src.models.job import Job
 from src.models.pit import Pit
 from src.models.user import User
@@ -30,6 +31,69 @@ router = APIRouter(tags=["streams"])
 logger = get_logger(__name__)
 
 
+def _resolve_stream_path(pit: Pit) -> str:
+    """Get the MediaMTX stream path for a pit.
+
+    Priority:
+      1. Assigned Camera's RTSP stream_urls → extract path (e.g. 'cam1')
+      2. Pit's camera_rtsp_url field → extract path
+      3. Convention: workshop_{id}_pit_{number}
+    """
+    # 1. From assigned Camera model
+    if pit.camera and pit.camera.stream_urls:
+        urls = pit.camera.stream_urls
+        for proto in ("rtsp", "hls", "webrtc"):
+            group = urls.get(proto, {})
+            if isinstance(group, dict):
+                main = group.get("main", "")
+                if main:
+                    # Extract path segment from URL like rtsp://host:8554/cam1
+                    parts = main.rstrip("/").rsplit("/", 1)
+                    if len(parts) == 2 and parts[1]:
+                        # Strip query params and .m3u8 suffix
+                        path = parts[1].split("?")[0].replace("/index.m3u8", "")
+                        if path:
+                            return path
+
+    # 2. From pit's legacy camera_rtsp_url (e.g. rtsp://host/cam1)
+    if pit.camera_rtsp_url:
+        parts = pit.camera_rtsp_url.rstrip("/").rsplit("/", 1)
+        if len(parts) == 2 and parts[1]:
+            return parts[1].split("?")[0]
+
+    # 3. Convention fallback
+    return f"workshop_{pit.workshop_id}_pit_{pit.pit_number}"
+
+
+def _build_stream_urls(
+    stream_path: str, token: str, settings, pit_id: int, expires_at
+) -> StreamTokenResponse:
+    """Build StreamTokenResponse using public URL (Funnel) or private host."""
+    public_url = (settings.MEDIAMTX_PUBLIC_URL or "").rstrip("/")
+
+    if public_url:
+        # Tailscale Funnel: HTTPS on port 443 → Pi's HLS port.
+        # WebRTC won't work through Funnel (UDP), so leave empty.
+        return StreamTokenResponse(
+            pit_id=pit_id,
+            stream_token=token,
+            expires_at=expires_at,
+            rtsp_url="",
+            webrtc_url="",
+            hls_url=f"{public_url}/{stream_path}/index.m3u8",
+        )
+
+    host = settings.MEDIAMTX_HOST
+    return StreamTokenResponse(
+        pit_id=pit_id,
+        stream_token=token,
+        expires_at=expires_at,
+        rtsp_url=f"rtsp://{host}:{settings.MEDIAMTX_RTSP_PORT}/{stream_path}",
+        webrtc_url=f"http://{host}:{settings.MEDIAMTX_WEBRTC_PORT}/{stream_path}",
+        hls_url=f"http://{host}:8888/{stream_path}/index.m3u8",
+    )
+
+
 # ─── Get stream token for a pit ───────────────────────────────────────────────
 @router.post("/pits/{pit_id}/stream-token", response_model=StreamTokenResponse)
 async def get_stream_token(
@@ -39,7 +103,8 @@ async def get_stream_token(
 ):
     """
     Generate a short-lived token to access the pit's camera stream.
-    Returns RTSP, WebRTC, and HLS URLs for the stream.
+    Returns WebRTC and HLS URLs. When MEDIAMTX_PUBLIC_URL is set
+    (Tailscale Funnel), only HLS is returned (WebRTC UDP can't traverse the tunnel).
     """
     pit = await db.get(Pit, pit_id)
     if pit is None:
@@ -51,7 +116,8 @@ async def get_stream_token(
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    if not pit.camera_rtsp_url:
+    # Check camera availability: assigned Camera OR legacy camera_rtsp_url
+    if not pit.camera and not pit.camera_rtsp_url:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No camera configured for this pit",
@@ -63,23 +129,14 @@ async def get_stream_token(
         hours=settings.STREAM_TOKEN_EXPIRE_HOURS
     )
 
-    # Stream path: workshop_{id}_pit_{number}
-    stream_path = f"workshop_{pit.workshop_id}_pit_{pit.pit_number}"
-    host = settings.MEDIAMTX_HOST
+    stream_path = _resolve_stream_path(pit)
 
     logger.info(
         f"Stream token issued: pit_id={pit_id} "
         f"user_id={current_user.id} stream_path={stream_path}"
     )
 
-    return StreamTokenResponse(
-        pit_id=pit_id,
-        stream_token=token,
-        expires_at=expires_at,
-        rtsp_url=f"rtsp://{host}:{settings.MEDIAMTX_RTSP_PORT}/{stream_path}?token={token}",
-        webrtc_url=f"http://{host}:{settings.MEDIAMTX_WEBRTC_PORT}/{stream_path}?token={token}",
-        hls_url=f"http://{host}:8888/{stream_path}/index.m3u8?token={token}",
-    )
+    return _build_stream_urls(stream_path, token, settings, pit_id, expires_at)
 
 
 # ─── Stream status for a pit ──────────────────────────────────────────────────
@@ -163,18 +220,10 @@ async def public_stream_token_by_code(
         hours=settings.STREAM_TOKEN_EXPIRE_HOURS
     )
 
-    stream_path = f"workshop_{pit.workshop_id}_pit_{pit.pit_number}"
-    host = settings.MEDIAMTX_HOST
+    stream_path = _resolve_stream_path(pit)
 
     logger.info(
         f"Public stream token issued: tracking_code={tracking_code} pit_id={pit.id}"
     )
 
-    return StreamTokenResponse(
-        pit_id=pit.id,
-        stream_token=token,
-        expires_at=expires_at,
-        rtsp_url=f"rtsp://{host}:{settings.MEDIAMTX_RTSP_PORT}/{stream_path}?token={token}",
-        webrtc_url=f"http://{host}:{settings.MEDIAMTX_WEBRTC_PORT}/{stream_path}?token={token}",
-        hls_url=f"http://{host}:8888/{stream_path}/index.m3u8?token={token}",
-    )
+    return _build_stream_urls(stream_path, token, settings, pit.id, expires_at)

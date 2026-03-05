@@ -63,4 +63,15 @@ export const devicesApi = {
     const { data } = await apiClient.put(`/devices/${deviceId}/assign`, { workshop_id: workshopId, pit_id: pitId })
     return data
   },
+
+  listAssignments: async (workshopId?: number): Promise<any[]> => {
+    const params = workshopId ? { workshop_id: workshopId } : {}
+    const resp = await apiClient.get<any>('/admin/devices/assignments', { params })
+    const payload = resp.data
+    return payload?.data?.items || payload?.items || []
+  },
+
+  unassign: async (deviceId: string): Promise<void> => {
+    await apiClient.post(`/admin/devices/${deviceId}/unassign`)
+  },
 }
