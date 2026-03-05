@@ -20,7 +20,8 @@ server:
     - "http://localhost:5173"          # Vite dev server (default)
     - "http://localhost:5174"          # Vite dev server (fallback when 5173 in use)
     - "http://localhost:5175"          # Vite dev server (launch.json configured port)
-    # Add production domain before deploying
+    - "https://ppf-monitoring.vercel.app"   # Production frontend
+    - "https://ppf-monitoring-k34tgjqm4-ai-meharbnsinghs-projects.vercel.app"  # Vercel preview
 
 database:
   type: "postgresql"
@@ -81,7 +82,7 @@ video:
   stream_token_expire_hours: 1
   # Public URL for remote access via Tailscale Funnel (e.g. https://piwifi.tailnet.ts.net)
   # When set, HLS URLs use this instead of mediamtx_host. WebRTC is disabled (UDP won't traverse Funnel).
-  mediamtx_public_url: ""
+  mediamtx_public_url: "https://piwifi.taile42746.ts.net"
 
 subscriptions:
   trial_days: 14
