@@ -202,10 +202,14 @@ async def public_stream_token_by_code(
             detail="Invalid tracking code. Must be 6 digits.",
         )
 
+    # Eagerly load pit and its camera relationship
+    from src.models.camera import Camera
     result = await db.execute(
         select(Job)
         .where(Job.tracking_code == tracking_code)
-        .options(selectinload(Job.pit))
+        .options(
+            selectinload(Job.pit).selectinload(Pit.camera)
+        )
     )
     job = result.scalar_one_or_none()
 
@@ -229,17 +233,6 @@ async def public_stream_token_by_code(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No camera configured for this bay",
         )
-    
-    # Load camera relationship if it exists (needed for _resolve_stream_path)
-    if pit.camera:
-        from sqlalchemy.orm import selectinload
-        from src.models.camera import Camera
-        result = await db.execute(
-            select(Pit)
-            .where(Pit.id == pit.id)
-            .options(selectinload(Pit.camera))
-        )
-        pit = result.scalar_one()
 
     settings = get_settings()
     token = generate_stream_token()
