@@ -47,13 +47,27 @@ def _resolve_stream_path(pit: Pit) -> str:
             if isinstance(group, dict):
                 main = group.get("main", "")
                 if main:
-                    # Extract path segment from URL like rtsp://host:8554/cam1
-                    parts = main.rstrip("/").rsplit("/", 1)
-                    if len(parts) == 2 and parts[1]:
-                        # Strip query params and .m3u8 suffix
-                        path = parts[1].split("?")[0].replace("/index.m3u8", "")
-                        if path:
-                            return path
+                    # Extract path segment from URL
+                    # Examples: 
+                    #   rtsp://host:8554/cam1 → cam1
+                    #   http://host:8888/cam1/index.m3u8 → cam1
+                    #   https://host/cam1/whep → cam1
+                    path = main
+                    # Remove protocol
+                    if "://" in path:
+                        path = path.split("://", 1)[1]
+                    # Remove host:port (everything before first /)
+                    if "/" in path:
+                        path = path.split("/", 1)[1]
+                    else:
+                        continue  # No path found
+                    # Now path is like 'cam1', 'cam1/index.m3u8', or 'cam1/whep'
+                    # Extract just the first segment (the stream name)
+                    path = path.split("/")[0]
+                    # Strip query params if any
+                    path = path.split("?")[0]
+                    if path:
+                        return path
 
     # 2. From pit's legacy camera_rtsp_url (e.g. rtsp://host/cam1)
     if pit.camera_rtsp_url:
