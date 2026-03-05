@@ -25,6 +25,7 @@ from src.schemas.camera import (
 from src.api.dependencies import get_current_user
 from src.models.user import User
 from src.services.camera_discovery import discover_mediamtx_cameras
+from src.services.hikvision_discovery import discover_hikvision_cameras
 
 router = APIRouter(prefix="/cameras", tags=["cameras"])
 
@@ -255,6 +256,89 @@ async def trigger_camera_discovery(
         "new_cameras": len(new_cameras),
         "available_cameras": len(available_cameras),
         "cameras": [c.to_dict() for c in available_cameras],
+    }
+
+
+@router.post("/discover/hikvision", response_model=dict)
+async def discover_hikvision_cameras_endpoint(
+    workshop_id: int = Query(..., description="Workshop ID to register cameras to"),
+    subnet: Optional[str] = Query(None, description="Subnet to scan (e.g., 192.168.1.0/24). Auto-detected if not provided."),
+    auto_scan: bool = Query(True, description="Auto-detect and scan local subnet"),
+    register: bool = Query(False, description="Auto-register discovered cameras to workshop"),
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Discover Hikvision cameras on the network.
+    
+    Uses multiple discovery methods:
+    1. ONVIF WS-Discovery (standard IP camera discovery)
+    2. Active network scanning (if subnet provided or auto_scan enabled)
+    
+    Discovered cameras can be optionally auto-registered to the workshop.
+    """
+    # Verify access
+    if current_user.workshop_id != workshop_id and current_user.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to discover cameras for this workshop"
+        )
+    
+    # Run Hikvision discovery
+    discovered = await discover_hikvision_cameras(
+        subnet=subnet,
+        auto_detect_subnet=auto_scan
+    )
+    
+    registered_count = 0
+    existing_count = 0
+    
+    if register and discovered:
+        # Get existing device IDs for this workshop
+        result = await session.execute(
+            select(Camera.device_id).where(Camera.workshop_id == workshop_id)
+        )
+        existing_device_ids = {row[0] for row in result.all()}
+        
+        # Register new cameras
+        for cam_data in discovered:
+            if cam_data["device_id"] not in existing_device_ids:
+                camera = Camera(
+                    workshop_id=workshop_id,
+                    device_id=cam_data["device_id"],
+                    name=cam_data["name"],
+                    description=cam_data.get("description"),
+                    camera_type="hikvision",
+                    model=cam_data.get("model"),
+                    manufacturer=cam_data.get("manufacturer", "Hikvision"),
+                    ip_address=cam_data["ip_address"],
+                    mac_address=cam_data.get("mac_address"),
+                    port=cam_data.get("port", 554),
+                    stream_urls=cam_data.get("stream_urls"),
+                    has_ptz=cam_data.get("has_ptz", False),
+                    has_audio=cam_data.get("has_audio", False),
+                    is_online=cam_data.get("is_online", True),
+                    status="online" if cam_data.get("is_online") else "pending",
+                    discovered_via=cam_data.get("discovered_via", "scan"),
+                    firmware_version=cam_data.get("firmware_version"),
+                )
+                session.add(camera)
+                existing_device_ids.add(cam_data["device_id"])
+                registered_count += 1
+            else:
+                existing_count += 1
+        
+        if registered_count > 0:
+            await session.commit()
+    
+    return {
+        "message": f"Hikvision discovery complete",
+        "workshop_id": workshop_id,
+        "cameras_found": len(discovered),
+        "cameras_registered": registered_count,
+        "cameras_existing": existing_count,
+        "cameras": discovered,
+        "subnet_used": subnet,
     }
 
 
