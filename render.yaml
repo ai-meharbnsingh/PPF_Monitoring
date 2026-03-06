@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: ppf-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 2
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        value: postgresql+asyncpg://neondb_owner:npg_lJLb5jpPri2z@ep-bitter-fog-ajl4k2t5-pooler.c-3.us-east-2.aws.neon.tech:5432/neondb
+      - key: SYNC_DATABASE_URL
+        value: postgresql+psycopg2://neondb_owner:npg_lJLb5jpPri2z@ep-bitter-fog-ajl4k2t5-pooler.c-3.us-east-2.aws.neon.tech:5432/neondb
+      - key: MQTT_BROKER_HOST
+        value: c4cb4d2b4a3e432c9d61b8b56ee359af.s1.eu.hivemq.cloud
+      - key: MQTT_BROKER_PORT
+        value: 8883
+      - key: MQTT_USE_TLS
+        value: "true"
+      - key: MQTT_USERNAME
+        value: ppf_backend
+      - key: MQTT_PASSWORD
+        value: PPF@Mqtt2026!secure
+      - key: MEDIAMTX_PUBLIC_URL
+        value: https://piwifi.taile42746.ts.net
+      - key: JWT_SECRET_KEY
+        value: c8c5643b8e7e83e49f859c44c8206a56fe7f567da340b0f62233fb226699b099
+      - key: SUPER_ADMIN_USERNAME
+        value: super_admin
+      - key: SUPER_ADMIN_PASSWORD
+        value: SuperAdmin@123
+      - key: CORS_ORIGINS
+        value: '["https://ppf-monitoring.vercel.app","https://ppf-monitoring-git-master-ai-meharbnsinghs-projects.vercel.app","http://localhost:5173"]'
+      - key: ENVIRONMENT
+        value: production
