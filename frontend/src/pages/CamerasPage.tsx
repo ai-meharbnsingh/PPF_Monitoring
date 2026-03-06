@@ -146,7 +146,23 @@ export default function CamerasPage() {
     cameraName: string
   } | null>(null)
 
-  if (loading) return <PageSpinner />
+  if (loading) {
+    console.log('CamerasPage: Still loading...')
+    return <PageSpinner />
+  }
+  
+  if (!workshopId) {
+    return (
+      <div className="p-6 min-h-screen">
+        <div className="card p-8 text-center">
+          <p className="text-white font-medium">No workshop selected</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Please log in with a user account that has a workshop assigned.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 min-h-screen">
