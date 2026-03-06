@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Search, Video, Thermometer, Wind, Activity } from 'lucide-react'
 import { VideoPlayer } from '@/components/video/VideoPlayer'
 

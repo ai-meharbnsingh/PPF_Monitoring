@@ -28,7 +28,7 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const [protocol, setProtocol] = useState<StreamProtocol>('loading')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Handle fullscreen toggle
