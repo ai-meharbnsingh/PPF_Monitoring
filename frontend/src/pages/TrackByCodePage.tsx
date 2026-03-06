@@ -91,7 +91,17 @@ export default function TrackByCodePage() {
           if (streamRes.ok) {
             const stream = await streamRes.json()
             console.log('Stream token data:', stream)
-            setStreamUrls({ webrtcUrl: stream.webrtc_url ?? '', hlsUrl: stream.hls_url ?? '' })
+            let hlsUrl = stream.hls_url ?? ''
+            const webrtcUrl = stream.webrtc_url ?? ''
+            
+            // Fallback: construct HLS URL from WebRTC URL if hls_url is empty
+            // Convert: https://host/cam1/whep → https://host/cam1/index.m3u8
+            if (!hlsUrl && webrtcUrl) {
+              hlsUrl = webrtcUrl.replace('/whep', '/index.m3u8')
+              console.log('Constructed HLS URL from WebRTC:', hlsUrl)
+            }
+            
+            setStreamUrls({ webrtcUrl, hlsUrl })
           } else {
             const errorText = await streamRes.text()
             console.error('Stream token error:', streamRes.status, errorText)
