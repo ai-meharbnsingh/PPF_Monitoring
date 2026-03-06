@@ -42,7 +42,8 @@ export default function TrackPitPage() {
     setError('')
     
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/track/pit/${code}`)
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://ppf-backend-w0aq.onrender.com/api/v1'
+      const response = await fetch(`${apiBase}/track/pit/${code}`)
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Tracking code not found')

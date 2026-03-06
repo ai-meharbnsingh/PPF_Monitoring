@@ -7,6 +7,8 @@ import { Car, Search, Video, Thermometer, Droplets, Wind, Activity, Clock, Wrenc
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ppf-backend-w0aq.onrender.com/api/v1'
+
 interface TrackingData {
   job_id: number
   tracking_code: string
@@ -67,7 +69,7 @@ export default function TrackByCodePage() {
     setLoading(true)
     try {
       // First, try to fetch job by tracking code
-      const jobRes = await fetch(`/api/v1/track/code/${lookupCode}`)
+      const jobRes = await fetch(`${API_BASE_URL}/track/code/${lookupCode}`)
       
       if (jobRes.ok) {
         // Job found - use job tracking
@@ -76,7 +78,7 @@ export default function TrackByCodePage() {
 
         // Fetch sensor data for job
         try {
-          const sensorRes = await fetch(`/api/v1/track/code/${lookupCode}/sensors`)
+          const sensorRes = await fetch(`${API_BASE_URL}/track/code/${lookupCode}/sensors`)
           if (sensorRes.ok) {
             const sensor = await sensorRes.json()
             setSensorData(sensor)
@@ -88,7 +90,7 @@ export default function TrackByCodePage() {
         // Fetch stream token for job
         if (job.camera_is_online) {
           try {
-            const streamRes = await fetch(`/api/v1/track/code/${lookupCode}/stream-token`)
+            const streamRes = await fetch(`${API_BASE_URL}/track/code/${lookupCode}/stream-token`)
             if (streamRes.ok) {
               const stream = await streamRes.json()
               let hlsUrl = stream.hls_url ?? ''
@@ -106,7 +108,7 @@ export default function TrackByCodePage() {
         }
       } else if (jobRes.status === 404) {
         // Job not found - try pit tracking code
-        const pitRes = await fetch(`/api/v1/track/pit/${lookupCode}`)
+        const pitRes = await fetch(`${API_BASE_URL}/track/pit/${lookupCode}`)
         
         if (pitRes.ok) {
           const pitData = await pitRes.json()
