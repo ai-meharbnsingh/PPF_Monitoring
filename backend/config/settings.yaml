@@ -1,12 +1,12 @@
 # PPF Workshop Monitoring System — Main Configuration
 # Version: 1.0.0
-# Environment: development (override via .env ENVIRONMENT variable)
+# Environment: production (override via .env ENVIRONMENT variable)
 # DO NOT hardcode secrets here — use .env for all sensitive values
 
 app:
   name: "PPF Workshop Monitoring System"
   version: "1.0.0"
-  environment: "development"           # development | staging | production
+  environment: "production"           # development | staging | production
   debug: true
   api_prefix: "/api/v1"
 

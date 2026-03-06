@@ -124,6 +124,17 @@ export function VideoPlayer({
         setProtocol('offline')
         return
       }
+      
+      // Demo video URL format: demo:/path/to/video.mp4
+      if (hlsUrl.startsWith('demo:')) {
+        const videoPath = hlsUrl.replace('demo:', '')
+        console.log('Playing demo video:', videoPath)
+        videoRef.current.src = videoPath
+        videoRef.current.loop = true
+        setProtocol('hls')
+        return
+      }
+      
       if (Hls.isSupported()) {
         const hls = new Hls({ enableWorker: false })
         hlsRef.current = hls
@@ -177,23 +188,63 @@ export function VideoPlayer({
   }, [webrtcUrl, hlsUrl, isOnline])
 
   if (!isOnline || protocol === 'offline') {
+    // Show fallback demo video when camera is offline
     return (
-      <div
-        className={clsx(
-          'flex flex-col items-center justify-center gap-3 bg-gray-900 rounded-xl text-center p-8',
-          className,
-        )}
+      <div 
+        ref={containerRef}
+        className={clsx('relative bg-black rounded-xl overflow-hidden cursor-pointer group', className)}
+        onClick={toggleFullscreen}
       >
-        <VideoOff className="h-10 w-10 text-gray-500" />
-        <div>
-          <p className="text-sm text-gray-400 font-medium">Camera Offline</p>
+        {/* Demo video overlay badge */}
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-500/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+          <VideoOff className="h-3 w-3" />
+          Demo Mode
+        </div>
+        
+        {pitName && (
+          <div className="absolute top-2 left-2 z-10 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">
+            {pitName}
+          </div>
+        )}
+
+        {/* Camera offline indicator - bottom */}
+        <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/40 rounded-full">
+            <VideoOff className="h-3 w-3 text-red-400" />
+            <span className="text-[10px] text-red-300 font-medium">Camera Offline</span>
+          </div>
           {cameraLastSeen && (
-            <p className="text-xs text-gray-600 mt-0.5">
+            <span className="text-[10px] text-gray-500">
               Last seen {formatRelative(cameraLastSeen)}
-            </p>
+            </span>
           )}
         </div>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+
+        {/* Fullscreen button */}
+        <div className="absolute bottom-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              void toggleFullscreen()
+            }}
+            className="flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Fallback demo video */}
+        <video
+          ref={videoRef}
+          src="/videos/live-bay-preview.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-contain"
+          style={{ minHeight: '200px' }}
+        />
       </div>
     )
   }

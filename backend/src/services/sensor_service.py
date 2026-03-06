@@ -47,6 +47,45 @@ def _resolve_threshold(pit_cfg, ws_cfg, field: str, default):
     return default
 
 
+def _calculate_iaq_from_gas_resistance(gas_resistance: Optional[float]) -> Optional[float]:
+    """
+    Calculate estimated IAQ from BME688 gas resistance.
+    
+    This is a simplified estimation since we don't have the BSEC library.
+    BME688 gas resistance inversely correlates with VOC levels.
+    
+    Args:
+        gas_resistance: Gas resistance in Ohms (typically 1000-100000)
+        
+    Returns:
+        Estimated IAQ value (0-500 scale, where lower is better)
+    """
+    if gas_resistance is None or gas_resistance <= 0:
+        return None
+    
+    # Simplified IAQ estimation based on gas resistance thresholds
+    # These are approximate values for BME688
+    # > 20000 Ω: Good air quality (IAQ 0-50)
+    # 10000-20000 Ω: Moderate (IAQ 51-100)
+    # 5000-10000 Ω: Poor (IAQ 101-150)
+    # < 5000 Ω: Very Poor (IAQ 151-200+)
+    
+    if gas_resistance > 20000:
+        # Good: Map 20000-100000 to IAQ 50-0
+        iaq = max(0, 50 - (gas_resistance - 20000) / 1600)
+    elif gas_resistance > 10000:
+        # Moderate: Map 10000-20000 to IAQ 100-50
+        iaq = 100 - (gas_resistance - 10000) / 200
+    elif gas_resistance > 5000:
+        # Poor: Map 5000-10000 to IAQ 150-100
+        iaq = 150 - (gas_resistance - 5000) / 100
+    else:
+        # Very Poor: Map 0-5000 to IAQ 300-150
+        iaq = min(500, 300 - (gas_resistance - 5000) / 50)
+    
+    return round(iaq, 1)
+
+
 def parse_sensor_payload(raw_payload: str) -> Optional[dict]:
     """
     Parse incoming MQTT JSON payload from ESP32.
@@ -141,7 +180,13 @@ async def store_sensor_reading(
         temperature = _safe_float(payload.get("temperature"))
         humidity = _safe_float(payload.get("humidity"))
         pressure = _safe_float(payload.get("pressure"))
+        gas_resistance = _safe_float(payload.get("gas_resistance"))
+        
+        # Use provided IAQ or calculate from gas resistance
         iaq = _safe_float(payload.get("iaq"))
+        if iaq is None and gas_resistance is not None:
+            iaq = _calculate_iaq_from_gas_resistance(gas_resistance)
+        
         pm25 = _safe_float(payload.get("pm25"))
         pm10 = _safe_float(payload.get("pm10"))
 
@@ -158,7 +203,7 @@ async def store_sensor_reading(
             humidity=humidity,
             # BME680-specific (None for DHT22)
             pressure=pressure,
-            gas_resistance=_safe_float(payload.get("gas_resistance")),
+            gas_resistance=gas_resistance,
             iaq=iaq,
             iaq_accuracy=_safe_int(payload.get("iaq_accuracy")),
             # PMS5003-specific (None for BME680-only)

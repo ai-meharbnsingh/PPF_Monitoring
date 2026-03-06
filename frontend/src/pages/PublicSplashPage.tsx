@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
-    Home, Eye, X, ScanSearch, ArrowRight, CalendarCheck, LogIn,
-    AlertTriangle, MapPin, Phone, Mail, Instagram, Layers,
+    AlertTriangle, Home, Eye, X, ScanSearch, ArrowRight, CalendarCheck,
+    MapPin, Phone, Mail, Instagram, Layers,
     ShieldCheck, MessageSquare, Menu,
 } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
 
 /* ─────────────────── Modal Shell ─────────────────── */
 function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
@@ -28,44 +26,21 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
 
 /* ─────────────────── Main Page ─────────────────── */
 export default function PublicSplashPage() {
-    const navigate = useNavigate()
-    const { login, isLoading, error, isAuthenticated, user } = useAuth()
-
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [showTokenModal, setShowTokenModal] = useState(false)
-    const [showLoginModal, setShowLoginModal] = useState(false)
     const [showConsultModal, setShowConsultModal] = useState(false)
     const [tokenValue, setTokenValue] = useState('')
-    const [loginForm, setLoginForm] = useState({ username: '', password: '' })
     const [consultForm, setConsultForm] = useState({ carBrand: '', carModel: '', regYear: '', phone: '', email: '' })
     const [consultSubmitted, setConsultSubmitted] = useState(false)
     const tokenRef = useRef<HTMLInputElement>(null)
-    const usernameRef = useRef<HTMLInputElement>(null)
-
-    // After successful login, navigate away
-    useEffect(() => {
-        if (isAuthenticated && user) {
-            if (user.is_temporary_password) {
-                navigate('/change-password', { replace: true })
-            } else {
-                navigate('/admin/dashboard', { replace: true })
-            }
-        }
-    }, [isAuthenticated, user, navigate])
 
     // Auto-focus inputs when modals open
     useEffect(() => { if (showTokenModal) setTimeout(() => tokenRef.current?.focus(), 100) }, [showTokenModal])
-    useEffect(() => { if (showLoginModal) setTimeout(() => usernameRef.current?.focus(), 100) }, [showLoginModal])
 
     const handleTokenSubmit = () => {
         if (tokenValue.length === 6) {
             window.location.href = `/track?code=${tokenValue}`
         }
-    }
-
-    const handleLoginSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        await login(loginForm)
     }
 
     return (
@@ -105,13 +80,6 @@ export default function PublicSplashPage() {
                         >
                             <Eye className="w-4 h-4" />
                             LIVE BAY
-                        </button>
-                        <button
-                            onClick={() => setShowLoginModal(true)}
-                            className="flex items-center gap-1.5 text-gray-300 hover:text-electric-blue text-base font-medium px-3 py-1.5 rounded-lg hover:bg-electric-blue/10 transition-all"
-                        >
-                            <LogIn className="w-4 h-4" />
-                            LOGIN
                         </button>
                     </div>
 
@@ -156,13 +124,6 @@ export default function PublicSplashPage() {
                         >
                             <Eye className="w-4 h-4" />
                             Live Bay
-                        </button>
-                        <button
-                            onClick={() => { setShowLoginModal(true); setMobileMenuOpen(false) }}
-                            className="w-full flex items-center gap-2.5 text-gray-300 hover:text-electric-blue text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-electric-blue/10 transition-all"
-                        >
-                            <LogIn className="w-4 h-4" />
-                            Login
                         </button>
                     </div>
                 )}
@@ -384,58 +345,6 @@ export default function PublicSplashPage() {
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>
-            </Modal>
-
-            {/* ═══════════ LOGIN MODAL ═══════════ */}
-            <Modal open={showLoginModal} onClose={() => setShowLoginModal(false)}>
-                <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-electric-blue/10 border border-electric-blue/30 mb-4">
-                        <span className="text-electric-blue font-bold text-xl">R</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-white">Staff Login</h2>
-                    <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
-                </div>
-
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Username</label>
-                        <input
-                            ref={usernameRef}
-                            type="text"
-                            autoComplete="username"
-                            value={loginForm.username}
-                            onChange={(e) => setLoginForm(f => ({ ...f, username: e.target.value }))}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-electric-blue/50 transition-colors"
-                            placeholder="Enter your username"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Password</label>
-                        <input
-                            type="password"
-                            autoComplete="current-password"
-                            value={loginForm.password}
-                            onChange={(e) => setLoginForm(f => ({ ...f, password: e.target.value }))}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-electric-blue/50 transition-colors"
-                            placeholder="Enter your password"
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="flex items-start gap-2 p-3 rounded-lg border border-red-500/30 bg-red-500/10">
-                            <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                            <p className="text-sm text-red-400">{error}</p>
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading || !loginForm.username || !loginForm.password}
-                        className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Signing in...' : 'Sign In'}
-                    </button>
-                </form>
             </Modal>
 
             {/* ═══════════ CONSULTATION MODAL ═══════════ */}
