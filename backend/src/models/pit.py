@@ -51,6 +51,9 @@ class Pit(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # Customer tracking code (6-digit)
+    tracking_code: Mapped[Optional[str]] = mapped_column(String(6), nullable=True, unique=True)
+
     # ── Relationships ──────────────────────────────────────────────────────
     workshop: Mapped["Workshop"] = relationship("Workshop", back_populates="pits")
     device: Mapped[Optional["Device"]] = relationship(

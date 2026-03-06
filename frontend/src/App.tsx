@@ -21,6 +21,7 @@ const DevicesPage = lazy(() => import('@/pages/DevicesPage'))
 const CamerasPage = lazy(() => import('@/pages/CamerasPage'))
 const StaffPage = lazy(() => import('@/pages/StaffPage'))
 const TrackingPage = lazy(() => import('@/pages/TrackingPage'))
+const TrackPitPage = lazy(() => import('@/pages/TrackPitPage'))
 const TrackByCodePage = lazy(() => import('@/pages/TrackByCodePage'))
 const AdminPage = lazy(() => import('@/pages/AdminPage'))
 const AdminPendingDevicesPage = lazy(() => import('@/pages/admin/AdminPendingDevicesPage'))
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
   {
     path: '/track/:token',
     element: <Lazy element={<TrackingPage />} />,
+  },
+  {
+    path: '/my-bay',
+    element: <Lazy element={<TrackPitPage />} />,
   },
 
   // ── Auth: change password (before full access) ────────────────────────
