@@ -37,7 +37,10 @@ import {
 
 export default function CamerasPage() {
   const { user } = useSelector((state: RootState) => state.auth)
-  const [workshopId, setWorkshopId] = useState<number | null>(user?.workshop_id || null)
+  
+  // For super admin without workshop_id, default to 1
+  const initialWorkshopId = user?.workshop_id || (user?.role === 'super_admin' ? 1 : null)
+  const [workshopId] = useState<number | null>(initialWorkshopId)
 
   const [cameras, setCameras] = useState<Camera[]>([])
   const [discoveredCameras, setDiscoveredCameras] = useState<Camera[]>([])
@@ -47,13 +50,8 @@ export default function CamerasPage() {
   const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
-
-  // For super admin, default to workshop 1 if no workshop_id
-  useEffect(() => {
-    if (!workshopId && user?.role === 'super_admin') {
-      setWorkshopId(1) // Default workshop for super admin
-    }
-  }, [user, workshopId])
+  
+  console.log('CamerasPage render - user:', user?.role, 'workshopId:', workshopId)
 
   useEffect(() => {
     if (workshopId) {
@@ -63,17 +61,23 @@ export default function CamerasPage() {
   }, [workshopId])
 
   const fetchCameras = async () => {
-    if (!workshopId) return
+    if (!workshopId) {
+      console.log('No workshopId, skipping fetch')
+      return
+    }
     try {
       setLoading(true)
+      console.log('Fetching cameras for workshop:', workshopId)
       const [allCameras, discovered] = await Promise.all([
         getWorkshopCameras(workshopId),
         getDiscoveredCameras(workshopId),
       ])
+      console.log('Cameras fetched:', allCameras.length, 'Discovered:', discovered.length)
       setCameras(allCameras)
       setDiscoveredCameras(discovered)
-    } catch {
-      toast.error('Failed to fetch cameras')
+    } catch (err: any) {
+      console.error('Failed to fetch cameras:', err)
+      toast.error('Failed to fetch cameras: ' + (err.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
