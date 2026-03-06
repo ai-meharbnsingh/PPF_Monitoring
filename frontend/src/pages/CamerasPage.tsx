@@ -37,7 +37,7 @@ import {
 
 export default function CamerasPage() {
   const { user } = useSelector((state: RootState) => state.auth)
-  const workshopId = user?.workshop_id
+  const [workshopId, setWorkshopId] = useState<number | null>(user?.workshop_id || null)
 
   const [cameras, setCameras] = useState<Camera[]>([])
   const [discoveredCameras, setDiscoveredCameras] = useState<Camera[]>([])
@@ -47,6 +47,13 @@ export default function CamerasPage() {
   const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
+
+  // For super admin, default to workshop 1 if no workshop_id
+  useEffect(() => {
+    if (!workshopId && user?.role === 'super_admin') {
+      setWorkshopId(1) // Default workshop for super admin
+    }
+  }, [user, workshopId])
 
   useEffect(() => {
     if (workshopId) {
