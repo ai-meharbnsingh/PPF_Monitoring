@@ -203,7 +203,6 @@ async def public_stream_token_by_code(
         )
 
     # Eagerly load pit and its camera relationship
-    from src.models.camera import Camera
     result = await db.execute(
         select(Job)
         .where(Job.tracking_code == tracking_code)
