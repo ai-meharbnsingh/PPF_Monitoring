@@ -39,8 +39,11 @@ def _resolve_stream_path(pit: Pit) -> str:
       2. Pit's camera_rtsp_url field → extract path
       3. Convention: workshop_{id}_pit_{number}
     """
+    logger.debug(f"Resolving stream path for pit {pit.id}, camera: {pit.camera is not None}")
+    
     # 1. From assigned Camera model
     if pit.camera and pit.camera.stream_urls:
+        logger.debug(f"Camera stream_urls: {pit.camera.stream_urls}")
         urls = pit.camera.stream_urls
         for proto in ("rtsp", "hls", "webrtc"):
             group = urls.get(proto, {})
@@ -80,7 +83,7 @@ def _resolve_stream_path(pit: Pit) -> str:
 
 
 def _build_stream_urls(
-    stream_path: str, token: str, settings, pit_id: int, expires_at
+    stream_path: str, token: str, settings, pit_id: int, expires_at, pit: Pit = None
 ) -> StreamTokenResponse:
     """Build StreamTokenResponse using public URL (Funnel) or private host."""
     public_url = (settings.MEDIAMTX_PUBLIC_URL or "").rstrip("/")
@@ -88,13 +91,33 @@ def _build_stream_urls(
     if public_url:
         # Tailscale Funnel: HTTPS on port 443 → Pi's HLS port.
         # WebRTC won't work through Funnel (UDP), so leave empty.
+        
+        # Check if camera has funnel URL already in stream_urls
+        if pit and pit.camera and pit.camera.stream_urls:
+            hls_urls = pit.camera.stream_urls.get('hls', {})
+            funnel_hls = hls_urls.get('main', '')
+            # If camera already has HTTPS funnel URL, use it directly
+            if funnel_hls and funnel_hls.startswith('https://') and 'ts.net' in funnel_hls:
+                logger.info(f"Using camera's funnel HLS URL: {funnel_hls}")
+                return StreamTokenResponse(
+                    pit_id=pit_id,
+                    stream_token=token,
+                    expires_at=expires_at,
+                    rtsp_url="",
+                    webrtc_url="",
+                    hls_url=funnel_hls,
+                )
+        
+        # Otherwise construct from public_url + stream_path
+        hls_url = f"{public_url}/{stream_path}/index.m3u8"
+        logger.info(f"Using constructed funnel HLS URL: {hls_url}")
         return StreamTokenResponse(
             pit_id=pit_id,
             stream_token=token,
             expires_at=expires_at,
             rtsp_url="",
             webrtc_url="",
-            hls_url=f"{public_url}/{stream_path}/index.m3u8",
+            hls_url=hls_url,
         )
 
     host = settings.MEDIAMTX_HOST
@@ -240,9 +263,13 @@ async def public_stream_token_by_code(
     )
 
     stream_path = _resolve_stream_path(pit)
-
+    
     logger.info(
-        f"Public stream token issued: tracking_code={tracking_code} pit_id={pit.id}"
+        f"Stream path resolved: tracking_code={tracking_code} "
+        f"pit_id={pit.id} stream_path={stream_path} "
+        f"has_camera={pit.camera is not None} "
+        f"camera_id={pit.camera.id if pit.camera else None} "
+        f"public_url={settings.MEDIAMTX_PUBLIC_URL}"
     )
 
-    return _build_stream_urls(stream_path, token, settings, pit.id, expires_at)
+    return _build_stream_urls(stream_path, token, settings, pit.id, expires_at, pit)
