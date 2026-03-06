@@ -116,6 +116,7 @@ export function VideoPlayer({
     }
 
     const tryHLS = async () => {
+      console.log('Trying HLS with URL:', hlsUrl)
       if (!videoRef.current) return
       if (Hls.isSupported()) {
         const hls = new Hls({ enableWorker: false })
@@ -127,8 +128,9 @@ export function VideoPlayer({
           setProtocol('hls')
         })
         hls.on(Hls.Events.ERROR, (_, data) => {
+          console.error('HLS error:', data)
           if (data.fatal) {
-            setError('Video stream unavailable')
+            setError(`Video stream error: ${data.type} - ${data.details}`)
             setProtocol('offline')
           }
         })
