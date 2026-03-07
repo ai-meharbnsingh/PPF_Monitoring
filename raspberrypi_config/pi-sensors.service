@@ -1,16 +1,17 @@
 [Unit]
 Description=Pi Sensor Data to MQTT
-After=network.target
+After=network.target mosquitto.service
 
 [Service]
 Type=simple
-User=pi
+User=root
 WorkingDirectory=/home/pi/wifi-portal
+Environment="PYTHONUNBUFFERED=1"
+StandardOutput=journal
+StandardError=journal
 ExecStart=/usr/bin/python3 /home/pi/wifi-portal/pi_sensor_mqtt.py
 Restart=always
 RestartSec=10
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
