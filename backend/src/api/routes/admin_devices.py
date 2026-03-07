@@ -42,7 +42,7 @@ async def list_pending_devices(
 ):
     """
     List all devices awaiting provisioning (status=pending or workshop_id=null).
-    These are ESP32 devices that have announced themselves but not yet approved.
+    These are edge devices that have announced themselves but not yet approved.
     """
     base_query = select(Device).where(
         (Device.status == DeviceStatus.PENDING.value) | 

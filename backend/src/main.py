@@ -46,6 +46,9 @@ async def _render_keep_alive() -> None:
     to prevent Render free-tier from spinning the process down.
 
     Only runs when BACKEND_BASE_URL is set (i.e., on Render, not in local dev).
+    
+    Note: Render free tier sleeps after 15 min of inactivity. This ping runs
+    every 10 minutes to keep the service awake.
     """
     base_url = getattr(settings, "BACKEND_BASE_URL", None)
     if not base_url:
@@ -57,17 +60,25 @@ async def _render_keep_alive() -> None:
 
     import httpx
 
+    # Initial delay to let service fully start
+    await asyncio.sleep(30)
+    
     while True:
         try:
-            await asyncio.sleep(10 * 60)  # 10 minutes
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.get(ping_url)
-                logger.info(f"Keep-alive ping → {resp.status_code}")
+                if resp.status_code == 200:
+                    logger.debug(f"Keep-alive ping successful → {resp.status_code}")
+                else:
+                    logger.warning(f"Keep-alive ping returned → {resp.status_code}")
         except asyncio.CancelledError:
             logger.info("Render keep-alive cancelled")
             break
         except Exception as exc:
             logger.warning(f"Keep-alive ping failed: {exc}")
+        
+        # Sleep 10 minutes between pings
+        await asyncio.sleep(10 * 60)
 
 
 async def _stale_device_sweeper() -> None:
@@ -196,14 +207,26 @@ if settings.is_development:
     )
 else:
     # Production: Add Vercel frontend to allowed origins
+    # Note: FastAPI doesn't support wildcards with allow_credentials=True
+    # We must list explicit origins
     cors_origins = settings.CORS_ORIGINS.copy()
+    
+    # Vercel production and common preview deployment patterns
     vercel_origins = [
         "https://ppf-monitoring.vercel.app",
-        "https://ppf-monitoring-*.vercel.app",  # Preview deployments
+        "https://ppf-monitoring-git-master-ai-meharbnsinghs-projects.vercel.app",
+        "https://ppf-monitoring-git-develop-ai-meharbnsinghs-projects.vercel.app",
+        "https://ppf-monitoring-git-staging-ai-meharbnsinghs-projects.vercel.app",
+        # Add more preview patterns as needed
     ]
+    
     for origin in vercel_origins:
         if origin not in cors_origins:
             cors_origins.append(origin)
+    
+    # Remove any wildcard patterns (they don't work with credentials)
+    cors_origins = [o for o in cors_origins if "*" not in o]
+    
     logger.info(f"CORS: Using origins: {cors_origins}")
     app.add_middleware(
         CORSMiddleware,
@@ -211,6 +234,8 @@ else:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Request-ID"],
+        max_age=600,  # Cache preflight for 10 minutes
     )
 
 

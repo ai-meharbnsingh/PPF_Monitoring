@@ -58,8 +58,10 @@ client = mqtt.Client(client_id=DEVICE_ID)
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
 if USE_TLS:
-    client.tls_set(cert_reqs=ssl.CERT_NONE)
-    client.tls_insecure_set(True)
+    # Use proper TLS verification with system CA certificates
+    # On Raspberry Pi: sudo apt-get install ca-certificates
+    import certifi
+    client.tls_set(ca_certs=certifi.where())
 
 def on_connect(c, u, f, rc):
     if rc == 0:

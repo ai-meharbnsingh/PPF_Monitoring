@@ -32,13 +32,13 @@ class SensorTypeResponse(BaseModel):
 
 # ─── Requests ─────────────────────────────────────────────────────────────────
 class DeviceRegister(BaseModel):
-    """POST /workshops/{workshop_id}/devices — register a new ESP32 gateway."""
+    """POST /workshops/{workshop_id}/devices — register a new edge device gateway."""
 
     device_id: str = Field(
         ...,
         min_length=5,
         max_length=50,
-        description="Unique device ID, e.g. ESP32-A1B2C3D4E5F6",
+        description="Unique device ID, e.g. PIWIFI-01 or ESP32-A1B2C3D4E5F6",
     )
     pit_id: Optional[int] = Field(None, description="Assign to a pit immediately (optional)")
     mac_address: Optional[str] = Field(None, max_length=17)
@@ -58,8 +58,9 @@ class DeviceRegister(BaseModel):
     @classmethod
     def validate_device_id(cls, v: str) -> str:
         v = v.strip().upper()
-        if not v.startswith("ESP32-"):
-            raise ValueError("device_id must start with 'ESP32-'")
+        # Accept both ESP32-MAC and PIWIFI-XX formats
+        if not (v.startswith("ESP32-") or v.startswith("PIWIFI-")):
+            raise ValueError("device_id must start with 'ESP32-' or 'PIWIFI-'")
         return v
 
 

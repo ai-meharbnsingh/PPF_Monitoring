@@ -35,3 +35,5 @@ services:
         value: '["https://ppf-monitoring.vercel.app","https://ppf-monitoring-git-master-ai-meharbnsinghs-projects.vercel.app","http://localhost:5173"]'
       - key: ENVIRONMENT
         value: production
+      - key: BACKEND_BASE_URL
+        value: https://ppf-backend-w0aq.onrender.com

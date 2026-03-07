@@ -20,7 +20,7 @@ from src.utils.constants import SubscriptionPlan, SubscriptionStatus
 class SubscriptionCreate(BaseModel):
     """POST /workshops/{workshop_id}/subscriptions  (super_admin only)"""
 
-    device_id: str = Field(..., max_length=50, description="ESP32 device_id to license")
+    device_id: str = Field(..., max_length=50, description="Device ID to license (e.g., PIWIFI-01)")
     plan: SubscriptionPlan = SubscriptionPlan.BASIC
     monthly_fee: Optional[float] = Field(None, ge=0)
     currency: str = Field(default="INR", max_length=3)

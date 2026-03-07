@@ -1,7 +1,7 @@
 """
 Module: license_service.py
 Purpose:
-    License key validation for ESP32 devices.
+    License key validation for edge devices (Raspberry Pi, ESP32).
     Called by MQTT subscriber on every incoming sensor message.
     Invalid licenses result in DISABLE command being sent to device.
 
@@ -54,7 +54,7 @@ async def validate_license(
 
     Args:
         db: Database session
-        device_id: ESP32 device identifier (MAC-based)
+        device_id: Device identifier (e.g., PIWIFI-01, ESP32-A1B2C3)
         license_key: License key sent by device
 
     Returns:

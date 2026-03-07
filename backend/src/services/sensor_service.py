@@ -88,9 +88,9 @@ def _calculate_iaq_from_gas_resistance(gas_resistance: Optional[float]) -> Optio
 
 def parse_sensor_payload(raw_payload: str) -> Optional[dict]:
     """
-    Parse incoming MQTT JSON payload from ESP32.
+    Parse incoming MQTT JSON payload from sensor devices.
 
-    Expected format (DHT22 + PMS5003):
+    Expected format (DHT22 + PMS5003 - used by ESP32):
     {
         "device_id": "ESP32-A1B2C3D4E5F6",
         "license_key": "LIC-XXXX-YYYY-ZZZZ",
@@ -103,11 +103,11 @@ def parse_sensor_payload(raw_payload: str) -> Optional[dict]:
         "timestamp": "2026-02-21T10:30:00Z"
     }
 
-    Expected format (BME680):
+    Expected format (BME680+PMS5003 - used by Raspberry Pi):
     {
-        "device_id": "ESP32-A1B2C3D4E5F6",
+        "device_id": "PIWIFI-01",
         "license_key": "LIC-XXXX-YYYY-ZZZZ",
-        "sensor_type": "BME680",
+        "sensor_type": "BME688+PMS5003",
         "temperature": 24.5,
         "humidity": 58.2,
         "pressure": 1013.2,

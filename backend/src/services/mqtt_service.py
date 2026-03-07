@@ -1,7 +1,7 @@
 """
 Module: mqtt_service.py
 Purpose:
-    MQTT subscriber that listens for sensor data from ESP32 devices.
+    MQTT subscriber that listens for sensor data from edge devices (Raspberry Pi).
     On each message:
       1. Parses JSON payload
       2. Validates license key
@@ -68,7 +68,7 @@ def publish_device_command(
     payload: Optional[dict] = None,
 ) -> bool:
     """
-    Publish a command to an ESP32 device via MQTT.
+    Publish a command to an edge device via MQTT.
 
     Args:
         workshop_id: Workshop ID (for topic routing)
@@ -351,7 +351,7 @@ async def _handle_device_status(topic: str, payload_str: str) -> None:
 
 async def _handle_provisioning_announce(topic: str, payload_str: str) -> None:
     """
-    Handle provisioning announce messages from new ESP32 devices.
+    Handle provisioning announce messages from new edge devices.
     Creates a pending device record if one does not already exist.
     """
     logger.warning(f"PROV-HANDLER-STARTED: topic={topic}, payload_len={len(payload_str)}")

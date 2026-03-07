@@ -78,7 +78,7 @@ async def register_device(
     db: AsyncSession, workshop_id: int, payload: DeviceRegister
 ) -> Device:
     """
-    Register a new ESP32 gateway device.
+    Register a new edge device gateway.
     Auto-generates a license key and creates a basic subscription.
     """
     # Resolve sensor type IDs

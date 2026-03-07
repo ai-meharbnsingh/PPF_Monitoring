@@ -6,8 +6,8 @@ Purpose:
 
     - POST   /firmware/upload              — Upload a new firmware binary (owner+)
     - GET    /firmware/releases            — List all firmware releases (staff+)
-    - GET    /firmware/latest              — Get latest version info (public for ESP32)
-    - GET    /firmware/download/{version}  — Download .bin file (public for ESP32)
+    - GET    /firmware/latest              — Get latest version info (public for devices)
+    - GET    /firmware/download/{version}  — Download .bin file (public for devices)
     - POST   /firmware/trigger-ota/{device_id} — Push OTA to a device (owner+)
 
 Author: PPF Monitoring Team
@@ -89,12 +89,12 @@ async def list_releases(
     return [FirmwareReleaseOut.model_validate(r) for r in releases]
 
 
-# ─── Get latest version (for ESP32 polling) ─────────────────────────────────
+# ─── Get latest version (for device polling) ─────────────────────────────────
 @router.get("/firmware/latest", response_model=FirmwareLatestOut)
 async def get_latest(
     db: AsyncSession = Depends(get_db),
 ):
-    """Get the latest firmware version info. Public endpoint for ESP32 devices."""
+    """Get the latest firmware version info. Public endpoint for edge devices."""
     release = await firmware_service.get_latest_release(db)
     if not release:
         raise HTTPException(
@@ -117,7 +117,7 @@ async def download_firmware(
     version: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Download a firmware .bin file by version. Public for ESP32 HTTPUpdate."""
+    """Download a firmware .bin file by version. Public for device OTA updates."""
     release = await firmware_service.get_release_by_version(db, version)
     if not release:
         raise HTTPException(
@@ -172,7 +172,7 @@ async def trigger_ota(
             detail="No firmware release found",
         )
 
-    # Build the download URL the ESP32 will use.
+    # Build the download URL the device will use.
     # Prefer BACKEND_BASE_URL (set on Render/cloud) so the URL is publicly
     # reachable from the device.  Fall back to localhost for local dev.
     backend_base = (

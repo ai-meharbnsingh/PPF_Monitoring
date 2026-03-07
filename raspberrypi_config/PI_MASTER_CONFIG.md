@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|-------|
 | **Username** | `pi` |
-| **Password** | `raspberry` |
+| **Password** | `raspberry` (CHANGE IMMEDIATELY AFTER FIRST BOOT) |
 | **SSH** | `ssh pi@<IP>` or `ssh pi@<hostname>.local` |
 
 ---
@@ -341,7 +341,7 @@ network:
       regulatory-domain: "IN"
       access-points:
         "Jas_Mehar":
-          password: "airtel2730"
+          password: "YOUR_WIFI_PASSWORD"
       optional: true
 EOF
 
@@ -545,7 +545,7 @@ RestartSec=10
 Environment="MQTT_BROKER=c4cb4d2b4a3e432c9d61b8b56ee359af.s1.eu.hivemq.cloud"
 Environment="MQTT_PORT=8883"
 Environment="MQTT_USERNAME=ppf_backend"
-Environment="MQTT_PASSWORD=PPF@Mqtt2026!secure"
+Environment="MQTT_PASSWORD=${MQTT_PASSWORD}"
 
 [Install]
 WantedBy=multi-user.target

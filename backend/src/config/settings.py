@@ -156,7 +156,7 @@ class Settings(BaseSettings):
     MQTT_RECONNECT_DELAY: int = _yaml_config["mqtt"]["reconnect_delay_seconds"]
     MQTT_USE_TLS: bool = False
 
-    # ── Backend public URL (used for OTA download links sent to ESP32) ───────
+    # ── Backend public URL (used for OTA download links sent to devices) ───────
     # Set BACKEND_BASE_URL on Render (e.g. https://ppf-backend-w0aq.onrender.com)
     # Falls back to http://SERVER_HOST:SERVER_PORT for local dev.
     BACKEND_BASE_URL: Optional[str] = None

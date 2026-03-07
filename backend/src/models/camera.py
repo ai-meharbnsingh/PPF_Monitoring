@@ -1,7 +1,7 @@
 """
 Module: camera.py
 Purpose:
-    Camera ORM model — represents IP cameras (Hikvision, Raspberry Pi, ESP32-CAM).
+    Camera ORM model — represents IP cameras (Hikvision, Raspberry Pi with MediaMTX).
     Separate from Pit to allow flexible camera assignment and management.
 
 Author: PPF Monitoring Team

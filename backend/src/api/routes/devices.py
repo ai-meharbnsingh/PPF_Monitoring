@@ -90,7 +90,7 @@ async def register_device(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_owner_or_admin),
 ):
-    """Register a new ESP32 gateway device. owner or super_admin."""
+    """Register a new edge device gateway. owner or super_admin."""
     from src.utils.constants import UserRole
     if (
         current_user.role != UserRole.SUPER_ADMIN.value

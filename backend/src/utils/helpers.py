@@ -48,7 +48,7 @@ def generate_device_id(mac_address: str) -> str:
         mac_address: Hardware MAC, e.g., 'A1:B2:C3:D4:E5:F6'
 
     Returns:
-        str: Device ID e.g., 'ESP32-A1B2C3D4E5F6'
+        str: Device ID e.g., 'PIWIFI-01' or 'ESP32-A1B2C3D4E5F6'
     """
     clean_mac = mac_address.replace(":", "").replace("-", "").upper()
     return f"ESP32-{clean_mac}"

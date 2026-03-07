@@ -42,7 +42,7 @@ class FirmwareUploadResponse(BaseModel):
 
 
 class FirmwareLatestOut(BaseModel):
-    """Lightweight response for ESP32 version check."""
+    """Lightweight response for device version check."""
     version: str
     file_size: int
     checksum_sha256: str

@@ -1,7 +1,7 @@
 """
 Module: device_command.py
 Purpose:
-    DeviceCommand ORM model — log of all commands sent to ESP32 devices
+    DeviceCommand ORM model — log of all commands sent to edge devices
     (DISABLE, ENABLE, RESTART, UPDATE_FIRMWARE, SET_INTERVAL).
 
 Author: PPF Monitoring Team

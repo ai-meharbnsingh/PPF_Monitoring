@@ -85,7 +85,7 @@ class SensorData(Base):
     # ── Timestamps ────────────────────────────────────────────────────────
     device_timestamp: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
-    )  # Timestamp from ESP32 clock
+    )  # Timestamp from device clock (RPi or ESP32)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )  # Server ingestion time

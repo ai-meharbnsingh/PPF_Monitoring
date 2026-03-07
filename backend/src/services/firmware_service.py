@@ -118,7 +118,7 @@ def trigger_device_ota(
 
     Args:
         workshop_id: Workshop the device belongs to
-        device_id: Target device ID (e.g. "ESP32-083AF2A9F084")
+        device_id: Target device ID (e.g. "PIWIFI-01" or "ESP32-A1B2C3")
         firmware_url: Full URL to the firmware .bin download endpoint
 
     Returns:

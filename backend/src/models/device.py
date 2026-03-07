@@ -1,7 +1,7 @@
 """
 Module: device.py
 Purpose:
-    Device ORM model — represents one Olimex ESP32-GATEWAY unit.
+    Device ORM model — represents one edge sensor device (Raspberry Pi or ESP32).
     Stores sensor configuration (DHT22+PMS5003 or BME680) and licensing.
 
 Author: PPF Monitoring Team

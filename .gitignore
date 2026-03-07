@@ -90,3 +90,6 @@ rishab/
 rg-auto-studio-main.zip
 config.json
 .vercel
+
+# Credentials file (contains secrets)
+.env.credentials
