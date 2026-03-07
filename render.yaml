@@ -1,3 +1,10 @@
+# Render.com Deployment Configuration
+# 
+# This file configures the PPF Backend service on Render.com
+# For complete documentation, see: raspberrypi_config/DEPLOYMENT.md
+#
+# IMPORTANT: Update the DATABASE_URL with your Neon credentials before deploying!
+
 services:
   - type: web
     name: ppf-backend
@@ -8,12 +15,25 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 2
     envVars:
+      # Python Version
       - key: PYTHON_VERSION
         value: 3.11.0
+
+      # =============================================================================
+      # DATABASE CONFIGURATION (Update with your Neon credentials)
+      # =============================================================================
+      # Get your Neon connection string from: https://console.neon.tech
+      # Format: postgresql+asyncpg://user:password@host:5432/database
       - key: DATABASE_URL
         value: postgresql+asyncpg://neondb_owner:npg_lJLb5jpPri2z@ep-bitter-fog-ajl4k2t5-pooler.c-3.us-east-2.aws.neon.tech:5432/neondb
       - key: SYNC_DATABASE_URL
         value: postgresql+psycopg2://neondb_owner:npg_lJLb5jpPri2z@ep-bitter-fog-ajl4k2t5-pooler.c-3.us-east-2.aws.neon.tech:5432/neondb
+
+      # =============================================================================
+      # MQTT BROKER CONFIGURATION (HiveMQ Cloud)
+      # =============================================================================
+      # Sign up at: https://console.hivemq.cloud
+      # Create a cluster and add credentials
       - key: MQTT_BROKER_HOST
         value: c4cb4d2b4a3e432c9d61b8b56ee359af.s1.eu.hivemq.cloud
       - key: MQTT_BROKER_PORT
@@ -24,17 +44,70 @@ services:
         value: ppf_backend
       - key: MQTT_PASSWORD
         value: PPF@Mqtt2026!secure
-      - key: MEDIAMTX_PUBLIC_URL
-        value: https://piwifi.taile42746.ts.net
+
+      # =============================================================================
+      # SECURITY CONFIGURATION (CHANGE IN PRODUCTION!)
+      # =============================================================================
+      # Generate a new JWT_SECRET_KEY:
+      # python3 -c "import secrets; print(secrets.token_hex(32))"
       - key: JWT_SECRET_KEY
         value: c8c5643b8e7e83e49f859c44c8206a56fe7f567da340b0f62233fb226699b099
+      
+      # Change default admin password before going live!
       - key: SUPER_ADMIN_USERNAME
         value: super_admin
       - key: SUPER_ADMIN_PASSWORD
         value: SuperAdmin@123
+
+      # Generate a unique stream token secret:
+      # python3 -c "import secrets; print(secrets.token_hex(32))"
+      - key: STREAM_TOKEN_SECRET
+        generateValue: true
+
+      # =============================================================================
+      # CORS CONFIGURATION (Allowed Frontend Origins)
+      # =============================================================================
+      # Add your Vercel deployment URLs here
+      # Format: JSON array of strings
       - key: CORS_ORIGINS
         value: '["https://ppf-monitoring.vercel.app","https://ppf-monitoring-git-master-ai-meharbnsinghs-projects.vercel.app","http://localhost:5173"]'
+
+      # =============================================================================
+      # APPLICATION CONFIGURATION
+      # =============================================================================
       - key: ENVIRONMENT
         value: production
       - key: BACKEND_BASE_URL
         value: https://ppf-backend-w0aq.onrender.com
+      - key: LOG_LEVEL
+        value: INFO
+
+      # =============================================================================
+      # VIDEO STREAMING CONFIGURATION (Optional)
+      # =============================================================================
+      - key: MEDIAMTX_PUBLIC_URL
+        value: https://piwifi.taile42746.ts.net
+
+      # =============================================================================
+      # SENSOR CONFIGURATION (Optional - using defaults)
+      # =============================================================================
+      # - key: SENSOR_OFFLINE_THRESHOLD_SECONDS
+      #   value: "60"
+      # - key: CAMERA_OFFLINE_THRESHOLD_SECONDS
+      #   value: "300"
+      # - key: SENSOR_DATA_RETENTION_DAYS
+      #   value: "90"
+
+# =================================================================================
+# POST-DEPLOYMENT CHECKLIST
+# =================================================================================
+# 1. Verify health endpoint: https://ppf-backend-w0aq.onrender.com/health
+# 2. Create workshop in database
+# 3. Create pit in database
+# 4. Create device record in database
+# 5. Create SUBSCRIPTION record in database (CRITICAL!)
+# 6. Configure Pi with correct DEVICE_ID and LICENSE_KEY
+# 7. Verify data is flowing to dashboard
+#
+# For detailed instructions, see: raspberrypi_config/DEPLOYMENT.md
+# =================================================================================
