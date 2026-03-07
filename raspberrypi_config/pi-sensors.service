@@ -1,0 +1,16 @@
+[Unit]
+Description=Pi Sensor Data to MQTT
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/wifi-portal
+ExecStart=/usr/bin/python3 /home/pi/wifi-portal/pi_sensor_mqtt.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

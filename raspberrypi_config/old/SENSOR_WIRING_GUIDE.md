@@ -6,10 +6,10 @@ This document describes the wiring for the **BME688** (I2C) and **PMS5003** (UAR
 
 | Component | Function | Raspberry Pi Pin | GPIO Number |
 |-----------|----------|------------------|-------------|
-| **BME688** | VCC (3.3V)| Pin 17           | -           |
-| **BME688** | SDA      | Pin 19           | GPIO 10     |
-| **BME688** | SCL      | Pin 21           | GPIO 9      |
-| **BME688** | GND      | Pin 25           | -           |
+| **BME688** | VCC (3.3V)| Pin 1            | -           |
+| **BME688** | SDA      | Pin 3            | GPIO 2      |
+| **BME688** | SCL      | Pin 5            | GPIO 3      |
+| **BME688** | GND      | Pin 9            | -           |
 | **PMS5003**| VCC (5V) | Pin 4            | -           |
 | **PMS5003**| GND      | Pin 6            | -           |
 | **PMS5003**| RX (Input)| Pin 8            | GPIO 14 (TX)|
@@ -19,11 +19,11 @@ This document describes the wiring for the **BME688** (I2C) and **PMS5003** (UAR
 
 ## 2. Software Configuration (On Pi)
 
-### I2C Overlays
-The BME688 uses **Software I2C** (bit-banging) on pins 19 and 21.
+### I2C Configuration
+The BME688 uses **Hardware I2C** (Bus 1) on pins 3 and 5.
 - **Config file:** `/boot/firmware/config.txt`
-- **Line added:** `dtoverlay=i2c-gpio,bus=3,sda=10,scl=9`
-- **Device Node:** `/dev/i2c-3`
+- **Ensure Line is present:** `dtparam=i2c_arm=on`
+- **Device Node:** `/dev/i2c-1`
 
 ### Serial Setup
 The PMS5003 uses the hardware UART.
@@ -48,8 +48,8 @@ sudo systemctl status pi-sensors
 # View live sensor logs
 sudo journalctl -u pi-sensors -f
 
-# Scan for BME688 on the software bus
-sudo i2cdetect -y 3
+# Scan for BME688 on the hardware bus
+sudo i2cdetect -y 1
 
 # Restart the sensor service
 sudo systemctl restart pi-sensors

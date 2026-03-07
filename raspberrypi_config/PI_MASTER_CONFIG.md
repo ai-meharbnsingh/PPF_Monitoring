@@ -1,7 +1,7 @@
 # Raspberry Pi Fleet - Master Configuration
 
 > Single source of truth for all Pi devices, sensors, services, and flashing instructions.
-> **Last Updated:** 2026-03-06 | **Next Device Number:** piwifi4
+> **Last Updated:** 2026-03-07 | **Next Device Number:** piwifi4
 
 ---
 
@@ -189,19 +189,19 @@ paths:
 ### Raspberry Pi 40-Pin Header
 
 ```
-        3V3  (1)  (2)  5V
-      GPIO2  (3)  (4)  5V      ← PMS5003 VCC
-      GPIO3  (5)  (6)  GND     ← PMS5003 GND
+        3V3  (1)  (2)  5V      ← BME688 VCC
+      GPIO2  (3)  (4)  5V      ← BME688 SDA (I2C Bus 1) | PMS5003 VCC
+      GPIO3  (5)  (6)  GND     ← BME688 SCL (I2C Bus 1) | PMS5003 GND
       GPIO4  (7)  (8)  GPIO14  ← PMS5003 RX (Pi TX)
-        GND  (9)  (10) GPIO15  ← PMS5003 TX (Pi RX)
+        GND  (9)  (10) GPIO15  ← BME688 GND | PMS5003 TX (Pi RX)
      GPIO17 (11)  (12) GPIO18
      GPIO27 (13)  (14) GND
      GPIO22 (15)  (16) GPIO23
-        3V3 (17)  (18) GPIO24  ← BME688 VCC
-     GPIO10 (19)  (20) GND     ← BME688 SDA (Software I2C bus 3)
-      GPIO9 (21)  (22) GPIO25  ← BME688 SCL (Software I2C bus 3)
+        3V3 (17)  (18) GPIO24
+     GPIO10 (19)  (20) GND
+      GPIO9 (21)  (22) GPIO25
      GPIO11 (23)  (24) GPIO8
-        GND (25)  (26) GPIO7   ← BME688 GND
+        GND (25)  (26) GPIO7
         SDA (27)  (28) SCL
       GPIO5 (29)  (30) GND
       GPIO6 (31)  (32) GPIO12
@@ -215,15 +215,39 @@ paths:
 
 | BME688 Pin | Connect To | Pi Pin | GPIO |
 |------------|-----------|--------|------|
-| VCC | 3.3V | Pin 17 | - |
-| SDA | Software I2C SDA | Pin 19 | GPIO10 |
-| SCL | Software I2C SCL | Pin 21 | GPIO9 |
-| GND | Ground | Pin 25 | - |
+| VCC | 3.3V (VCC) | Pin 1 | - |
+| SDA | Hardware I2C SDA | Pin 3 | GPIO2 |
+| SCL | Hardware I2C SCL | Pin 5 | GPIO3 |
+| GND | Ground | Pin 9 | - |
 
 **Software config required:**
-- `/boot/firmware/config.txt`: add `dtoverlay=i2c-gpio,bus=3,sda=10,scl=9`
-- Device node: `/dev/i2c-3`
-- Verify: `sudo i2cdetect -y 3` (should show address 0x76 or 0x77)
+- `/boot/firmware/config.txt`: ensure `dtparam=i2c_arm=on` is present
+- Device node: `/dev/i2c-1`
+- Verify: `sudo i2cdetect -y 1` (should show address 0x76 or 0x77)
+
+**IMPORTANT: BME688 Initialization with Retry**
+
+The BME688 sensor sometimes fails on first initialization. Use this pattern:
+
+```python
+import bme680
+from smbus2 import SMBus
+
+bme = None
+for attempt in range(5):
+    try:
+        bus = SMBus(1)
+        bme = bme680.BME680(i2c_addr=0x76, i2c_device=bus)
+        bme.set_humidity_oversample(bme680.OS_2X)
+        bme.set_pressure_oversample(bme680.OS_4X)
+        bme.set_temperature_oversample(bme680.OS_8X)
+        bme.set_filter(bme680.FILTER_SIZE_3)
+        print(f'✅ BME688 ready (attempt {attempt+1})')
+        break
+    except Exception as e:
+        print(f'Attempt {attempt+1} failed: {e}')
+        time.sleep(1)
+```
 
 ### PMS5003 (Particulate Matter / PM2.5)
 
@@ -238,16 +262,42 @@ paths:
 - `/boot/firmware/config.txt`: add `enable_uart=1`
 - Device node: `/dev/serial0` (links to `/dev/ttyS0`)
 
+**IMPORTANT: PMS5003 Serial Port Permissions Fix**
+
+If you get "Permission denied: '/dev/serial0'" error, run these commands:
+
+```bash
+# 1. Stop serial console from using the port
+sudo systemctl stop serial-getty@ttyS0.service
+sudo systemctl disable serial-getty@ttyS0.service
+
+# 2. Add pi user to tty group
+sudo usermod -a -G tty pi
+
+# 3. Fix device permissions
+sudo chmod 666 /dev/ttyS0
+
+# 4. Restart sensor service
+sudo systemctl restart pi-sensors
+```
+
 ### Sensor Service (pi-sensors)
 
 ```bash
 # Install sensor dependencies
-pip install bme680 pyserial paho-mqtt
+pip install bme680 pyserial paho-mqtt smbus2
 
-# Service file: /etc/systemd/system/pi-sensors.service
-# Script: /home/pi/wifi-portal/pi_sensor_mqtt.py
+# Copy files from this repo to Pi:
+# - pi_sensor_mqtt.py → /home/pi/wifi-portal/pi_sensor_mqtt.py
+# - pi-sensors.service → /etc/systemd/system/pi-sensors.service
+
 # MQTT Topic: workshop/<WORKSHOP_ID>/pit/<PIT_ID>/sensors
 # Device ID: PIWIFI-XX (matches hostname number)
+
+# Enable and start service
+sudo systemctl daemon-reload
+sudo systemctl enable pi-sensors
+sudo systemctl start pi-sensors
 
 # Management
 sudo systemctl status pi-sensors
@@ -260,15 +310,15 @@ sudo journalctl -u pi-sensors -f
 ```json
 {
     "device_id": "PIWIFI-01",
-    "license_key": "LIC-MOCK-PI-2026",
+    "license_key": "LIC-RG-STUDIO-2026",
     "sensor_type": "BME688+PMS5003",
-    "temperature": 24.50,
-    "humidity": 55.20,
+    "temperature": 28.37,
+    "humidity": 67.45,
     "pressure": 1013.25,
-    "gas_resistance": 50000,
-    "iaq": 50,
-    "pm25": 12,
-    "timestamp": "2026-03-06T16:53:45Z"
+    "pm1": 226,
+    "pm25": 397,
+    "pm10": 449,
+    "timestamp": "2026-03-07T12:45:00Z"
 }
 ```
 
@@ -372,7 +422,6 @@ dtoverlay=dwc2,dr_mode=host
 
 [all]
 enable_uart=1
-dtoverlay=i2c-gpio,bus=3,sda=10,scl=9
 EOF
 ```
 
@@ -501,6 +550,48 @@ sudo fsck -n /dev/mmcblk0p2
 
 # If read-only, reboot. If persistent, reflash the SD card.
 ```
+
+### BME688 not detected / "Unable to identify BME680"
+```bash
+# Check I2C is enabled
+sudo raspi-config nonint get_i2c  # Should return 0
+
+# Scan I2C bus
+sudo i2cdetect -y 1  # Should show 76 or 77
+
+# Check chip ID directly
+sudo python3 -c "from smbus2 import SMBus; bus=SMBus(1); print(f'Chip ID: 0x{bus.read_byte_data(0x76, 0xD0):02X}')"
+
+# If chip ID is 0x61 = BME680, 0x60 = BME688
+
+# Solution: The script has retry logic - just restart the service
+sudo systemctl restart pi-sensors
+```
+
+### PMS5003 "Permission denied" on /dev/serial0
+```bash
+# Check current permissions
+ls -la /dev/ttyS0
+
+# Should be: crw-rw-rw- (666)
+# If not, run the permission fix:
+sudo systemctl stop serial-getty@ttyS0.service
+sudo systemctl disable serial-getty@ttyS0.service
+sudo usermod -a -G tty pi
+sudo chmod 666 /dev/ttyS0
+sudo systemctl restart pi-sensors
+```
+
+### Sensors working but no data in dashboard
+1. Check Pi is publishing to MQTT:
+   ```bash
+   sudo journalctl -u pi-sensors -f
+   ```
+2. Check Render backend is processing (not sleeping):
+   ```bash
+   curl https://ppf-backend-w0aq.onrender.com/health
+   ```
+3. If backend uptime > 15 min without new data, trigger manual deploy on Render dashboard
 
 ---
 
